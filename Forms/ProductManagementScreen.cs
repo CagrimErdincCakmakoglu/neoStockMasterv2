@@ -36,7 +36,7 @@ namespace neoStockMasterv2.Forms
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
             PopulateOrderComboBox();
-            _productService = new ProductService(); // ya da uygun bir DI yöntemi
+            _productService = new ProductService(); //DI yöntemi
 
         }
 
@@ -316,7 +316,7 @@ namespace neoStockMasterv2.Forms
             {
                 ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
-                string userName = GetCurrentUserName();
+                string userName = LoggedInUser.Name;
                 string fileName = LanguageService.CurrentLanguage == "Türkçe" ?
                     $"{userName}'nın Ürünleri.xlsx" :
                     $"{userName}'s Products.xlsx";
@@ -469,13 +469,6 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-        private string GetCurrentUserName()
-        {
-            // Bu metodu kendi kullanıcı yönetim sisteminize göre düzenleyin
-            // Örnek: Session.CurrentUser.Name şeklinde olabilir
-            return "Cakmakoglu"; // Örnek değer
-        }
-
         private void dgwProducts_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             dgwProducts.ClearSelection(); //Form açıldığında DGW hücre seçili açılmaz.
@@ -569,12 +562,40 @@ namespace neoStockMasterv2.Forms
                     dgwProducts.DataSource = productTable.DefaultView.ToTable();
                 }
             }
+        }   
+
+        private void btnEditProduct_Click(object sender, EventArgs e)
+        {
+            string currentLanguage = LanguageService.CurrentLanguage;
+            EditProductScreen editProductScreen = new EditProductScreen(currentLanguage);
+
+            // MainMenu'nun IsAlwaysOnTop özelliğini kontrol et
+            if (Owner is MainMenu mainMenu)
+            {
+                editProductScreen.TopMost = mainMenu.IsAlwaysOnTop;
+            }
+
+            editProductScreen.ProductUpdated += (s, ev) =>
+            {
+                if (InvokeRequired)
+                {
+                    Invoke(new System.Action(() =>
+                    {
+                        LoadUserProducts();
+                    }));
+                }
+                else
+                {
+                    LoadUserProducts();
+                }
+            };
+
+            editProductScreen.ShowDialog();
         }
 
         private void btnMaximize_Click(object sender, EventArgs e)
         {
             Form maxForm = new Form();
-
 
             // Dil kontrolü (TR için Türkçe başlık, diğer durumlarda İngilizce)
             string currentLanguage = LanguageService.CurrentLanguage;
@@ -654,34 +675,18 @@ namespace neoStockMasterv2.Forms
 
             maxForm.ShowDialog();
         }
-
-        private void btnEditProduct_Click(object sender, EventArgs e)
+        private void btnCompare_Click(object sender, EventArgs e)
         {
             string currentLanguage = LanguageService.CurrentLanguage;
-            EditProductScreen editProductScreen = new EditProductScreen(currentLanguage);
+            CompareScreen compareScreen = new CompareScreen(currentLanguage);
 
             // MainMenu'nun IsAlwaysOnTop özelliğini kontrol et
             if (Owner is MainMenu mainMenu)
             {
-                editProductScreen.TopMost = mainMenu.IsAlwaysOnTop;
+                compareScreen.TopMost = mainMenu.IsAlwaysOnTop;
             }
 
-            editProductScreen.ProductUpdated += (s, ev) =>
-            {
-                if (InvokeRequired)
-                {
-                    Invoke(new System.Action(() =>
-                    {
-                        LoadUserProducts();
-                    }));
-                }
-                else
-                {
-                    LoadUserProducts();
-                }
-            };
-
-            editProductScreen.ShowDialog();
+            compareScreen.ShowDialog();
         }
     }
 }

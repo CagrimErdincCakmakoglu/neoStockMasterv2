@@ -183,6 +183,7 @@
             btnCompare.TabIndex = 2;
             btnCompare.Text = "Karşılaştır";
             btnCompare.UseVisualStyleBackColor = true;
+            btnCompare.Click += btnCompare_Click;
             // 
             // btnMaximize
             // 

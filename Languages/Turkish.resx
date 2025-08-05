@@ -352,4 +352,16 @@
   <data name="Ürünü Sil" xml:space="preserve">
     <value>Ürünü Sil</value>
   </data>
+  <data name="Satır Sayısı Belirle" xml:space="preserve">
+    <value>Satır Sayısı Belirle</value>
+  </data>
+  <data name="Satır Sayısı" xml:space="preserve">
+    <value>Satır Sayısı</value>
+  </data>
+  <data name="Tablo" xml:space="preserve">
+    <value>Tablo</value>
+  </data>
+  <data name="Uygula" xml:space="preserve">
+    <value>Uygula</value>
+  </data>
 </root>

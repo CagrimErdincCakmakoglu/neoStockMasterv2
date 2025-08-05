@@ -352,4 +352,16 @@
   <data name="Ürünü Sil" xml:space="preserve">
     <value>Delete the Product</value>
   </data>
+  <data name="Satır Sayısı Belirle" xml:space="preserve">
+    <value>Set Row Count</value>
+  </data>
+  <data name="Satır Sayısı" xml:space="preserve">
+    <value>Row Count</value>
+  </data>
+  <data name="Tablo" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Uygula" xml:space="preserve">
+    <value>Apply</value>
+  </data>
 </root>

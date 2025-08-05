@@ -547,6 +547,24 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Satır Sayısı.
+        /// </summary>
+        internal static string Satır_Sayısı {
+            get {
+                return ResourceManager.GetString("Satır Sayısı", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Satır Sayısı Belirle.
+        /// </summary>
+        internal static string Satır_Sayısı_Belirle {
+            get {
+                return ResourceManager.GetString("Satır Sayısı Belirle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Satış.
         /// </summary>
         internal static string Satış {
@@ -633,6 +651,15 @@ namespace neoStockMasterv2.Languages {
         internal static string Stok_Ekle {
             get {
                 return ResourceManager.GetString("Stok Ekle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tablo.
+        /// </summary>
+        internal static string Tablo {
+            get {
+                return ResourceManager.GetString("Tablo", resourceCulture);
             }
         }
         
@@ -724,6 +751,15 @@ namespace neoStockMasterv2.Languages {
         internal static string Ürünü_Sil {
             get {
                 return ResourceManager.GetString("Ürünü Sil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Uygula.
+        /// </summary>
+        internal static string Uygula {
+            get {
+                return ResourceManager.GetString("Uygula", resourceCulture);
             }
         }
         

@@ -56,7 +56,7 @@ namespace neoStockMasterv2.Forms
 
             grbMenu.Text = LanguageService.GetString("İşlem Menüsü");
             btnProductManagement.Text = LanguageService.GetString("Ürün İşlemleri");
-            btnCalculatePriceAddOrder.Text = LanguageService.GetString("Fiyat Hesapla - Sipariş Ekle");
+            btnCalculatePriceAddOrder.Text = LanguageService.GetString("Fiyat Hesaplama - Sipariş Oluşturma");
             btnViewOrdersEditOrders.Text = LanguageService.GetString("Siparişleri Görüntüle - Düzenle");
             btnZReport.Text = LanguageService.GetString("Z Raporu");
             grbUserPanel.Text = LanguageService.GetString("Kullanıcı Paneli");
@@ -236,6 +236,29 @@ namespace neoStockMasterv2.Forms
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Warning);
             }
+        }
+
+        private void OpenPricingOrdeScreen()
+        {
+            string currentLanguage = LanguageService.CurrentLanguage; // Mevcut dili al
+
+            PricingOrderScreen pricingOrderScreen = new PricingOrderScreen(currentLanguage);
+            pricingOrderScreen.Owner = this; // MainMenu'yu sahip olarak ayarla (diğer formlar MainMenu'nun önüne geçebilir)
+
+            pricingOrderScreen.TopMost = chbTop.Checked; // Yeni form da her zaman en önde olsun
+
+            pricingOrderScreen.FormClosed += (s, e) =>
+            {
+                // Eğer chbTop seçiliyse, tüm formlar en önde kalmaya devam etsin
+                ToggleAlwaysOnTop();
+            };
+
+            pricingOrderScreen.ShowDialog();
+        }
+
+        private void btnCalculatePriceAddOrder_Click(object sender, EventArgs e)
+        {
+            OpenPricingOrdeScreen();
         }
     }
 }

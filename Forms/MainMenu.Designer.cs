@@ -109,8 +109,9 @@
             btnCalculatePriceAddOrder.Name = "btnCalculatePriceAddOrder";
             btnCalculatePriceAddOrder.Size = new Size(269, 40);
             btnCalculatePriceAddOrder.TabIndex = 1;
-            btnCalculatePriceAddOrder.Text = "Fiyat Hesapla - Sipariş Ekle";
+            btnCalculatePriceAddOrder.Text = "Fiyat Hesaplama - Sipariş Oluşturma";
             btnCalculatePriceAddOrder.UseVisualStyleBackColor = true;
+            btnCalculatePriceAddOrder.Click += btnCalculatePriceAddOrder_Click;
             // 
             // btnProductManagement
             // 

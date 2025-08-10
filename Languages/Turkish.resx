@@ -144,8 +144,8 @@
   <data name="Temizle" xml:space="preserve">
     <value>Temizle</value>
   </data>
-  <data name="Fiyat Hesapla - Sipariş Ekle" xml:space="preserve">
-    <value>Fiyat Hesapla - Sipariş Ekle</value>
+  <data name="Fiyat Hesaplama - Sipariş Oluşturma" xml:space="preserve">
+    <value>Fiyat Hesaplama - Sipariş Oluşturma</value>
   </data>
   <data name="Döviz Bilgisi" xml:space="preserve">
     <value>Döviz Bilgisi</value>
@@ -363,5 +363,35 @@
   </data>
   <data name="Uygula" xml:space="preserve">
     <value>Uygula</value>
+  </data>
+  <data name="Fiyat Detayları" xml:space="preserve">
+    <value>Fiyat Detayları</value>
+  </data>
+  <data name="Toplam Tutar" xml:space="preserve">
+    <value>Toplam Tutar</value>
+  </data>
+  <data name="Toplam İndirim" xml:space="preserve">
+    <value>Toplam İndirim</value>
+  </data>
+  <data name="Vergi" xml:space="preserve">
+    <value>Vergi</value>
+  </data>
+  <data name="İndirim" xml:space="preserve">
+    <value>İndirim</value>
+  </data>
+  <data name="Müşteri Bilgilendirme Metni" xml:space="preserve">
+    <value>Müşteri Bilgilendirme Metni</value>
+  </data>
+  <data name="Kopyala" xml:space="preserve">
+    <value>Kopyala</value>
+  </data>
+  <data name="WhatsApp'ı Aç" xml:space="preserve">
+    <value>WhatsApp'ı Aç</value>
+  </data>
+  <data name="Sipariş Detayları" xml:space="preserve">
+    <value>Sipariş Detayları</value>
+  </data>
+  <data name="Sipariş Ekle" xml:space="preserve">
+    <value>Sipariş Ekle</value>
   </data>
 </root>

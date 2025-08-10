@@ -91,18 +91,6 @@ namespace neoStockMasterv2.Forms
             // 1. Mevcut seçili satırları kaydet
             SaveCurrentRows();
 
-            // 1.1. Mevcut seçili ürün ID'lerini al
-            //var selectedProductIds = new List<int>();
-            //foreach (DataGridViewRow row in dgwTable.Rows)
-            //{
-            //    if (!row.IsNewRow && row.Cells["ProductColumn"]?.Value != null)
-            //    {
-            //        if (int.TryParse(row.Cells["ProductColumn"].Value.ToString(), out int productId))
-            //        {
-            //            selectedProductIds.Add(productId);
-            //        }
-            //    }
-            //}
             var selectedProductIds = new List<string>();
             foreach (DataGridViewRow row in dgwTable.Rows)
             {
@@ -205,10 +193,9 @@ namespace neoStockMasterv2.Forms
                             dgwTable.Rows[e.RowIndex].Cells["PriceCurrency"].Value = selectedProduct.PriceCurrency;
                             dgwTable.Rows[e.RowIndex].Cells["Stock"].Value = selectedProduct.Stock;
                             dgwTable.Rows[e.RowIndex].Cells["AddedDate"].Value = isEnglish
-                                 ? selectedProduct.DateAdded.ToString("MM/dd/yyyy hh:mm tt")
-                                 : selectedProduct.DateAdded.ToString("dd.MM.yyyy HH:mm");
+                                 ? selectedProduct.DateAdded.ToString("MM/dd/yyyy hh:mm tt", new CultureInfo("en-US"))
+                                 : selectedProduct.DateAdded.ToString("dd.MM.yyyy HH:mm", new CultureInfo("tr-TR"));
 
-                            // ⬇⬇⬇ Bu satır çok önemli
                             UpdateComboBoxes(products);
                         }
                     }
@@ -222,11 +209,7 @@ namespace neoStockMasterv2.Forms
             dgwTable.ColumnHeadersDefaultCellStyle.BackColor = Color.LightGray;
 
             UpdateComboBoxes(products);
-
         }
-
-
-
 
         private void UpdateAllDateFormats()
         {

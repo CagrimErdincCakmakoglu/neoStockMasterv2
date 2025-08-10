@@ -167,6 +167,7 @@
             Controls.Add(grbTable);
             Controls.Add(grbRow);
             Controls.Add(menuStripLanguage);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStripLanguage;
             Name = "CompareScreen";
             Text = "CompareScreen";

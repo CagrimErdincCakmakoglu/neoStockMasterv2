@@ -91,6 +91,7 @@ namespace neoStockMasterv2
                 AddProductScreen.LoggedInUser = loggedInUser;
                 EditProductScreen.LoggedInUser = loggedInUser;
                 ProductService.LoggedInUser = loggedInUser;
+                PricingOrderScreen.LoggedInUser = loggedInUser;
                 //CalculatePriceAddOrderScreen.LoggedInUser = loggedInUser;
                 UserInfoScreen.LoggedInUser = loggedInUser;
                 //UserService.LoggedInUser = loggedInUser;

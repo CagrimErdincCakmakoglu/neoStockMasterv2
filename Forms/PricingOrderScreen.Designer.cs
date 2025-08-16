@@ -28,10 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PricingOrderScreen));
             menuStripLanguage = new MenuStrip();
             türkçeToolStripMenuItem = new ToolStripMenuItem();
             englishToolStripMenuItem = new ToolStripMenuItem();
             grbPriceDetails = new GroupBox();
+            grbCargo = new GroupBox();
+            nmrCargo = new NumericUpDown();
+            lblTaxIcon = new Label();
+            lwDisc = new ListView();
             chbLockForex = new CheckBox();
             chbLockPrice = new CheckBox();
             grbTax = new GroupBox();
@@ -48,10 +53,11 @@
             lblTotalPrice = new Label();
             dgwProducts = new DataGridView();
             grbCustomerMsg = new GroupBox();
+            pbScale = new PictureBox();
             btnWhatsapp = new Button();
             btnCopy = new Button();
             btnClear = new Button();
-            richTextBox1 = new RichTextBox();
+            rchMessage = new RichTextBox();
             grbOrderDetails = new GroupBox();
             btnAddOrder = new Button();
             mskPhoneNo = new MaskedTextBox();
@@ -64,6 +70,8 @@
             dgwOrderDetails = new DataGridView();
             menuStripLanguage.SuspendLayout();
             grbPriceDetails.SuspendLayout();
+            grbCargo.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)nmrCargo).BeginInit();
             grbTax.SuspendLayout();
             grbDisc.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nmrDisc).BeginInit();
@@ -72,6 +80,7 @@
             ((System.ComponentModel.ISupportInitialize)nmrTotalPrice).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgwProducts).BeginInit();
             grbCustomerMsg.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pbScale).BeginInit();
             grbOrderDetails.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgwOrderDetails).BeginInit();
             SuspendLayout();
@@ -104,6 +113,9 @@
             // 
             // grbPriceDetails
             // 
+            grbPriceDetails.Controls.Add(grbCargo);
+            grbPriceDetails.Controls.Add(lblTaxIcon);
+            grbPriceDetails.Controls.Add(lwDisc);
             grbPriceDetails.Controls.Add(chbLockForex);
             grbPriceDetails.Controls.Add(chbLockPrice);
             grbPriceDetails.Controls.Add(grbTax);
@@ -117,21 +129,63 @@
             grbPriceDetails.Controls.Add(dgwProducts);
             grbPriceDetails.Location = new Point(12, 27);
             grbPriceDetails.Name = "grbPriceDetails";
-            grbPriceDetails.Size = new Size(691, 338);
+            grbPriceDetails.Size = new Size(691, 456);
             grbPriceDetails.TabIndex = 1;
             grbPriceDetails.TabStop = false;
             grbPriceDetails.Text = "Fiyat Detayları";
+            // 
+            // grbCargo
+            // 
+            grbCargo.Controls.Add(nmrCargo);
+            grbCargo.Location = new Point(545, 396);
+            grbCargo.Name = "grbCargo";
+            grbCargo.Size = new Size(140, 54);
+            grbCargo.TabIndex = 12;
+            grbCargo.TabStop = false;
+            grbCargo.Text = "Kargo Bedeli";
+            // 
+            // nmrCargo
+            // 
+            nmrCargo.DecimalPlaces = 2;
+            nmrCargo.Location = new Point(6, 21);
+            nmrCargo.Maximum = new decimal(new int[] { 1661992959, 1808227885, 5, 0 });
+            nmrCargo.Name = "nmrCargo";
+            nmrCargo.Size = new Size(128, 23);
+            nmrCargo.TabIndex = 0;
+            nmrCargo.ValueChanged += nmrCargo_ValueChanged;
+            nmrCargo.KeyUp += nmrCargo_KeyUp;
+            // 
+            // lblTaxIcon
+            // 
+            lblTaxIcon.AutoSize = true;
+            lblTaxIcon.Location = new Point(642, 226);
+            lblTaxIcon.Name = "lblTaxIcon";
+            lblTaxIcon.Size = new Size(13, 15);
+            lblTaxIcon.TabIndex = 11;
+            lblTaxIcon.Text = "₺";
+            // 
+            // lwDisc
+            // 
+            lwDisc.Location = new Point(6, 252);
+            lwDisc.MultiSelect = false;
+            lwDisc.Name = "lwDisc";
+            lwDisc.Size = new Size(679, 136);
+            lwDisc.TabIndex = 10;
+            lwDisc.UseCompatibleStateImageBehavior = false;
+            lwDisc.ColumnWidthChanging += lwDisc_ColumnWidthChanging;
+            lwDisc.ItemCheck += lwDisc_ItemCheck;
+            lwDisc.ItemChecked += lwDisc_ItemChecked;
             // 
             // chbLockForex
             // 
             chbLockForex.AutoSize = true;
             chbLockForex.Checked = true;
             chbLockForex.CheckState = CheckState.Checked;
-            chbLockForex.Location = new Point(478, 0);
+            chbLockForex.Location = new Point(491, 0);
             chbLockForex.Name = "chbLockForex";
-            chbLockForex.Size = new Size(114, 19);
+            chbLockForex.Size = new Size(125, 19);
             chbLockForex.TabIndex = 9;
-            chbLockForex.Text = "Satış Döviz Kilitle";
+            chbLockForex.Text = "Para Birimini Kilitle";
             chbLockForex.UseVisualStyleBackColor = true;
             chbLockForex.CheckedChanged += chbLockForex_CheckedChanged;
             // 
@@ -140,11 +194,11 @@
             chbLockPrice.AutoSize = true;
             chbLockPrice.Checked = true;
             chbLockPrice.CheckState = CheckState.Checked;
-            chbLockPrice.Location = new Point(397, 0);
+            chbLockPrice.Location = new Point(388, 0);
             chbLockPrice.Name = "chbLockPrice";
-            chbLockPrice.Size = new Size(83, 19);
+            chbLockPrice.Size = new Size(99, 19);
             chbLockPrice.TabIndex = 8;
-            chbLockPrice.Text = "Fiyat Kilitle";
+            chbLockPrice.Text = "Fiyatları Kilitle";
             chbLockPrice.UseVisualStyleBackColor = true;
             chbLockPrice.CheckedChanged += chbLockPrice_CheckedChanged;
             // 
@@ -152,9 +206,9 @@
             // 
             grbTax.Controls.Add(cmbVAT);
             grbTax.Controls.Add(cmbSCT);
-            grbTax.Location = new Point(356, 260);
+            grbTax.Location = new Point(288, 396);
             grbTax.Name = "grbTax";
-            grbTax.Size = new Size(301, 54);
+            grbTax.Size = new Size(251, 54);
             grbTax.TabIndex = 2;
             grbTax.TabStop = false;
             grbTax.Text = "Vergi";
@@ -163,10 +217,11 @@
             // 
             cmbVAT.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbVAT.FormattingEnabled = true;
-            cmbVAT.Location = new Point(156, 21);
+            cmbVAT.Location = new Point(127, 21);
             cmbVAT.Name = "cmbVAT";
-            cmbVAT.Size = new Size(139, 23);
+            cmbVAT.Size = new Size(116, 23);
             cmbVAT.TabIndex = 1;
+            cmbVAT.SelectedIndexChanged += cmbVAT_SelectedIndexChanged;
             // 
             // cmbSCT
             // 
@@ -174,16 +229,17 @@
             cmbSCT.FormattingEnabled = true;
             cmbSCT.Location = new Point(6, 21);
             cmbSCT.Name = "cmbSCT";
-            cmbSCT.Size = new Size(139, 23);
+            cmbSCT.Size = new Size(116, 23);
             cmbSCT.TabIndex = 0;
+            cmbSCT.SelectedIndexChanged += cmbSCT_SelectedIndexChanged;
             // 
             // grbDisc
             // 
             grbDisc.Controls.Add(nmrDisc);
             grbDisc.Controls.Add(cmbDisc);
-            grbDisc.Location = new Point(23, 260);
+            grbDisc.Location = new Point(6, 396);
             grbDisc.Name = "grbDisc";
-            grbDisc.Size = new Size(301, 54);
+            grbDisc.Size = new Size(276, 54);
             grbDisc.TabIndex = 7;
             grbDisc.TabStop = false;
             grbDisc.Text = "İndirim";
@@ -191,11 +247,13 @@
             // nmrDisc
             // 
             nmrDisc.DecimalPlaces = 2;
-            nmrDisc.Location = new Point(166, 22);
+            nmrDisc.Location = new Point(140, 23);
             nmrDisc.Maximum = new decimal(new int[] { 1661992959, 1808227885, 5, 0 });
             nmrDisc.Name = "nmrDisc";
             nmrDisc.Size = new Size(120, 23);
             nmrDisc.TabIndex = 3;
+            nmrDisc.ValueChanged += nmrDisc_ValueChanged;
+            nmrDisc.KeyUp += nmrDisc_KeyUp;
             // 
             // cmbDisc
             // 
@@ -205,6 +263,7 @@
             cmbDisc.Name = "cmbDisc";
             cmbDisc.Size = new Size(121, 23);
             cmbDisc.TabIndex = 2;
+            cmbDisc.SelectedIndexChanged += cmbDisc_SelectedIndexChanged;
             // 
             // nmrTotalTax
             // 
@@ -213,7 +272,7 @@
             nmrTotalTax.Location = new Point(537, 221);
             nmrTotalTax.Maximum = new decimal(new int[] { 1661992959, 1808227885, 5, 0 });
             nmrTotalTax.Name = "nmrTotalTax";
-            nmrTotalTax.Size = new Size(120, 23);
+            nmrTotalTax.Size = new Size(99, 23);
             nmrTotalTax.TabIndex = 6;
             // 
             // lblTotalTax
@@ -282,51 +341,67 @@
             // 
             // grbCustomerMsg
             // 
+            grbCustomerMsg.Controls.Add(pbScale);
             grbCustomerMsg.Controls.Add(btnWhatsapp);
             grbCustomerMsg.Controls.Add(btnCopy);
             grbCustomerMsg.Controls.Add(btnClear);
-            grbCustomerMsg.Controls.Add(richTextBox1);
-            grbCustomerMsg.Location = new Point(12, 371);
+            grbCustomerMsg.Controls.Add(rchMessage);
+            grbCustomerMsg.Location = new Point(145, 489);
             grbCustomerMsg.Name = "grbCustomerMsg";
-            grbCustomerMsg.Size = new Size(691, 112);
+            grbCustomerMsg.Size = new Size(691, 178);
             grbCustomerMsg.TabIndex = 2;
             grbCustomerMsg.TabStop = false;
             grbCustomerMsg.Text = "Müşteri Bilgilendirme Metni";
             // 
+            // pbScale
+            // 
+            pbScale.Image = (Image)resources.GetObject("pbScale.Image");
+            pbScale.Location = new Point(658, 12);
+            pbScale.Name = "pbScale";
+            pbScale.Size = new Size(27, 21);
+            pbScale.SizeMode = PictureBoxSizeMode.StretchImage;
+            pbScale.TabIndex = 4;
+            pbScale.TabStop = false;
+            pbScale.Click += pbScale_Click;
+            // 
             // btnWhatsapp
             // 
-            btnWhatsapp.Location = new Point(356, 74);
+            btnWhatsapp.Location = new Point(365, 145);
             btnWhatsapp.Name = "btnWhatsapp";
             btnWhatsapp.Size = new Size(145, 23);
             btnWhatsapp.TabIndex = 3;
             btnWhatsapp.Text = "WhatsApp'ı Aç";
             btnWhatsapp.UseVisualStyleBackColor = true;
+            btnWhatsapp.Click += btnWhatsapp_Click;
             // 
             // btnCopy
             // 
-            btnCopy.Location = new Point(249, 74);
+            btnCopy.Location = new Point(258, 145);
             btnCopy.Name = "btnCopy";
             btnCopy.Size = new Size(75, 23);
             btnCopy.TabIndex = 2;
             btnCopy.Text = "Kopyala";
             btnCopy.UseVisualStyleBackColor = true;
+            btnCopy.Click += btnCopy_Click;
             // 
             // btnClear
             // 
-            btnClear.Location = new Point(146, 74);
+            btnClear.Location = new Point(155, 145);
             btnClear.Name = "btnClear";
             btnClear.Size = new Size(75, 23);
             btnClear.TabIndex = 1;
             btnClear.Text = "Temizle";
             btnClear.UseVisualStyleBackColor = true;
+            btnClear.Click += btnClear_Click;
             // 
-            // richTextBox1
+            // rchMessage
             // 
-            richTextBox1.Location = new Point(6, 22);
-            richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(678, 46);
-            richTextBox1.TabIndex = 0;
-            richTextBox1.Text = "";
+            rchMessage.Location = new Point(7, 39);
+            rchMessage.Name = "rchMessage";
+            rchMessage.ReadOnly = true;
+            rchMessage.Size = new Size(678, 100);
+            rchMessage.TabIndex = 0;
+            rchMessage.Text = "";
             // 
             // grbOrderDetails
             // 
@@ -440,7 +515,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(968, 496);
+            ClientSize = new Size(968, 674);
             Controls.Add(grbOrderDetails);
             Controls.Add(grbCustomerMsg);
             Controls.Add(grbPriceDetails);
@@ -454,6 +529,8 @@
             menuStripLanguage.PerformLayout();
             grbPriceDetails.ResumeLayout(false);
             grbPriceDetails.PerformLayout();
+            grbCargo.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)nmrCargo).EndInit();
             grbTax.ResumeLayout(false);
             grbDisc.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)nmrDisc).EndInit();
@@ -462,6 +539,7 @@
             ((System.ComponentModel.ISupportInitialize)nmrTotalPrice).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgwProducts).EndInit();
             grbCustomerMsg.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pbScale).EndInit();
             grbOrderDetails.ResumeLayout(false);
             grbOrderDetails.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)dgwOrderDetails).EndInit();
@@ -490,7 +568,7 @@
         private GroupBox grbCustomerMsg;
         private Button btnCopy;
         private Button btnClear;
-        private RichTextBox richTextBox1;
+        private RichTextBox rchMessage;
         private Button btnWhatsapp;
         private GroupBox grbOrderDetails;
         private DataGridView dgwOrderDetails;
@@ -505,5 +583,10 @@
         private ComboBox cmbVAT;
         private CheckBox chbLockForex;
         private CheckBox chbLockPrice;
+        private ListView lwDisc;
+        private PictureBox pbScale;
+        private Label lblTaxIcon;
+        private GroupBox grbCargo;
+        private NumericUpDown nmrCargo;
     }
 }

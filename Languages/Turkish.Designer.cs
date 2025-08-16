@@ -277,6 +277,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Fiyatları Kilitle.
+        /// </summary>
+        internal static string Fiyatları_Kilitle {
+            get {
+                return ResourceManager.GetString("Fiyatları Kilitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Genişlet.
         /// </summary>
         internal static string Genişlet {
@@ -579,6 +588,15 @@ namespace neoStockMasterv2.Languages {
         internal static string Para_Birimi {
             get {
                 return ResourceManager.GetString("Para Birimi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Para Birimini Kilitle.
+        /// </summary>
+        internal static string Para_Birimini_Kilitle {
+            get {
+                return ResourceManager.GetString("Para Birimini Kilitle", resourceCulture);
             }
         }
         

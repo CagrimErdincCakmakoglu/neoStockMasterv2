@@ -394,4 +394,10 @@
   <data name="Sipariş Ekle" xml:space="preserve">
     <value>Sipariş Ekle</value>
   </data>
+  <data name="Fiyatları Kilitle" xml:space="preserve">
+    <value>Fiyatları Kilitle</value>
+  </data>
+  <data name="Para Birimini Kilitle" xml:space="preserve">
+    <value>Para Birimini Kilitle</value>
+  </data>
 </root>

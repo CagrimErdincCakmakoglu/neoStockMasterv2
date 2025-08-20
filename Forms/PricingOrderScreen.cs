@@ -54,6 +54,7 @@ namespace neoStockMasterv2.Forms
             cmbVAT.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
 
             this.Height = 580; // Form başlangıç yüksekliği grbCustomerMsg daraltılmış geldiği için
+
         }
 
         private void PricingOrderScreen_Load(object sender, EventArgs e)
@@ -84,6 +85,10 @@ namespace neoStockMasterv2.Forms
 
             UpdateMessage();
             isWhatsApp();
+
+            InitTotalListViewTotal(); // Toplam ListView'ı başlat
+            InitTotalListViewDisc(); // İndirim ListView'ı başlat
+            InitTotalListViewTax(); // Vergi ListView'ı başlat
         }
 
         private void LanguageService_LanguageChanged()
@@ -267,6 +272,11 @@ namespace neoStockMasterv2.Forms
                 cmbCargo.SelectedIndex = 0;
                 txtCargo.Enabled = false;
             }
+
+            //lwTotal ve lwlDiscList içerisini temizleme
+            lwTotal.Items.Clear();
+            lwDiscList.Items.Clear();
+            lwTax.Items.Clear();
         }
 
         // cmbCargo seçimi değiştiğinde çalışacak olay
@@ -1109,6 +1119,10 @@ namespace neoStockMasterv2.Forms
         private void dgwOrderDetails_Changed(object sender, EventArgs e)
         {
             UpdateListViewFromDGV();
+            UpdateTotalsFromDisc(); // ListView'den toplamları güncelle EKK
+            UpdateDiscsFromDisc(); // EKK
+            ResetTax(); // EKK
+            UpdateMessage(); // EKK
         }
 
         private void UpdateListViewFromDGV()
@@ -1162,7 +1176,6 @@ namespace neoStockMasterv2.Forms
             bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
 
             // --- Vergi oranlarını al ---
-            // ÖTV
             decimal sctRate = 0;
             if (cmbSCT.SelectedIndex > 0 && cmbSCT.SelectedItem != null)
             {
@@ -1175,7 +1188,6 @@ namespace neoStockMasterv2.Forms
                             decimal.TryParse(part.Replace("%", ""), out sctRate);
             }
 
-            // KDV
             decimal vatRate = 0;
             if (cmbVAT.SelectedIndex > 0 && cmbVAT.SelectedItem != null)
             {
@@ -1188,11 +1200,9 @@ namespace neoStockMasterv2.Forms
                             decimal.TryParse(part.Replace("%", ""), out vatRate);
             }
 
-            // --- İndirim ---
             decimal yuzdeIndirim = GetSelectedDiscountPercent();
             decimal ekIndirim = nmrDisc.Value;
 
-            // --- Yabancı para var mı kontrol et ---
             bool needsExchange = lwDisc.Items
                 .Cast<ListViewItem>()
                 .Any(it =>
@@ -1202,7 +1212,6 @@ namespace neoStockMasterv2.Forms
                     return !IsTL(currency);
                 });
 
-            // --- Döviz kurlarını sadece gerekirse al ---
             Dictionary<string, (decimal BuyRate, decimal SellRate)> exchangeRates = null;
             if (needsExchange)
             {
@@ -1211,99 +1220,58 @@ namespace neoStockMasterv2.Forms
                     var forexService = new FREEMARKETforex();
                     exchangeRates = await forexService.GetExchangeRatesAsync();
                 }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine(isTurkish
-                        ? $"Döviz kurları alınırken hata: {ex.Message}"
-                        : $"Error occurred while fetching exchange rates: {ex.Message}");
-                }
+                catch { }
             }
 
-            decimal totalTaxAmount = 0m;
+            decimal totalTaxAmount_TL = 0m;
 
-            // --- Hesaplama ---
             foreach (ListViewItem item in lwDisc.Items)
             {
                 if (!item.Checked) continue;
 
                 decimal orijinalTutar = item.Tag is decimal d ? d : 0m;
                 string currency = item.SubItems[COL_CURRENCY].Text;
-
                 bool isForeignCurrency = !IsTL(currency);
 
-                // 1) İNDİRİMİ UYGULA
+                // 1) İndirim
                 decimal yuzdeselIndirimMiktar = (orijinalTutar * yuzdeIndirim) / 100m;
                 decimal toplamIndirim = yuzdeselIndirimMiktar + ekIndirim;
-                decimal tutarIndirimli = orijinalTutar - toplamIndirim;
-                if (tutarIndirimli < 0) tutarIndirimli = 0;
+                decimal tutarIndirimli = Math.Max(orijinalTutar - toplamIndirim, 0);
 
-                // 2) VERGİLERİ UYGULA
+                // 2) Vergiler
                 decimal otvTutar = (tutarIndirimli * sctRate) / 100m;
                 decimal tutarOtv = tutarIndirimli + otvTutar;
-
                 decimal kdvTutar = (tutarOtv * vatRate) / 100m;
                 decimal tutarSon = tutarOtv + kdvTutar;
-
-                // --- Vergi metinleri ---
-                string sctText = sctRate > 0 ? $"%{sctRate}" : (isTurkish ? "ÖTV Yok" : "No Excise Tax");
-                string vatText = vatRate > 0 ? $"%{vatRate}" : (isTurkish ? "KDV Yok" : "No VAT");
 
                 decimal sctInTL = 0m;
                 decimal vatInTL = 0m;
 
                 if (!isForeignCurrency)
                 {
-                    // TL cinsindeyse direkt vergi tutarlarını kullan
                     sctInTL = otvTutar;
                     vatInTL = kdvTutar;
-
-                    if (sctRate > 0)
-                        sctText += $" ({sctInTL:F2} TL)";
-                    if (vatRate > 0)
-                        vatText += $" ({vatInTL:F2} TL)";
                 }
-                else if ((sctRate > 0 || vatRate > 0) && exchangeRates != null)
+                else if (exchangeRates != null)
                 {
-                    try
+                    var rateKey = exchangeRates.Keys.FirstOrDefault(k =>
+                        k.Contains(currency, StringComparison.OrdinalIgnoreCase));
+                    if (rateKey != null)
                     {
-                        var rateKey = exchangeRates.Keys.FirstOrDefault(k =>
-                            k.Contains(currency, StringComparison.OrdinalIgnoreCase));
-
-                        if (rateKey != null)
-                        {
-                            decimal exchangeRate = exchangeRates[rateKey].SellRate;
-
-                            if (sctRate > 0)
-                            {
-                                sctInTL = otvTutar * exchangeRate;
-                                sctText += $" ({sctInTL:F2} TL)";
-                            }
-
-                            if (vatRate > 0)
-                            {
-                                vatInTL = kdvTutar * exchangeRate;
-                                vatText += $" ({vatInTL:F2} TL)";
-                            }
-                        }
-                        else
-                        {
-                            sctText += sctRate > 0 ? (isTurkish ? " (Kur bulunamadı)" : " (Rate not found)") : "";
-                            vatText += vatRate > 0 ? (isTurkish ? " (Kur bulunamadı)" : " (Rate not found)") : "";
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Döviz kuru hesaplanırken hata: {ex.Message}");
-                        sctText += sctRate > 0 ? (isTurkish ? " (Hesaplanamadı)" : " (Calc error)") : "";
-                        vatText += vatRate > 0 ? (isTurkish ? " (Hesaplanamadı)" : " (Calc error)") : "";
+                        decimal exchangeRate = exchangeRates[rateKey].SellRate;
+                        sctInTL = otvTutar * exchangeRate;
+                        vatInTL = kdvTutar * exchangeRate;
                     }
                 }
 
-                totalTaxAmount += sctInTL + vatInTL;
+                totalTaxAmount_TL += sctInTL + vatInTL;
 
-                // --- ListView güncelle ---
+                // --- ListView Güncelle ---
                 item.SubItems[COL_TOTAL].Text = tutarSon.ToString("F2");
-                //item.SubItems[COL_DISC_STATUS].Text = yuzdeIndirim > 0 ? $"%{yuzdeIndirim}" : (isTurkish ? "İndirim Yok" : "No Discount");
+                item.SubItems[COL_DISC_AMOUNT].Text = toplamIndirim.ToString("F2");
+                item.SubItems[COL_SCT].Text = sctRate > 0 ? $"%{sctRate} ({sctInTL:F2} TL)" : (isTurkish ? "ÖTV Yok" : "No Excise Tax");
+                item.SubItems[COL_VAT].Text = vatRate > 0 ? $"%{vatRate} ({vatInTL:F2} TL)" : (isTurkish ? "KDV Yok" : "No VAT");
+
                 string discStatus;
                 if (yuzdeIndirim > 0 && ekIndirim > 0)
                     discStatus = $"%{yuzdeIndirim} (+{ekIndirim:F2})";
@@ -1316,173 +1284,18 @@ namespace neoStockMasterv2.Forms
 
                 item.SubItems[COL_DISC_STATUS].Text = discStatus;
 
-                item.SubItems[COL_DISC_AMOUNT].Text = toplamIndirim.ToString("F2");
-                item.SubItems[COL_SCT].Text = sctText;
-                item.SubItems[COL_VAT].Text = vatText;
-
-                nmrTotalTax.Value = totalTaxAmount;
-
                 UpdateMessage();
             }
+
+            // --- lwTax güncelle ---
+            lwTax.Items.Clear();
+            var row = new ListViewItem("Türk Lirası");
+            row.SubItems.Add(totalTaxAmount_TL.ToString("F2", new System.Globalization.CultureInfo("tr-TR")));
+            lwTax.Items.Add(row);
+
+            UpdateTotalsFromDisc();
+            UpdateDiscsFromDisc();
         }
-
-        //private async Task ApplyDiscountAndTaxes()
-        //{
-        //    bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
-
-        //    // --- Vergi oranlarını al ---
-        //    decimal sctRate = 0, vatRate = 0;
-
-        //    if (cmbSCT.SelectedIndex > 0 && cmbSCT.SelectedItem != null)
-        //    {
-        //        string txt = cmbSCT.SelectedItem.ToString();
-        //        if (isTurkish && txt.StartsWith("%"))
-        //            decimal.TryParse(txt.Split(' ')[0].Replace("%", ""), out sctRate);
-        //        else
-        //            foreach (var part in txt.Split(' '))
-        //                if (part.Contains("%"))
-        //                    decimal.TryParse(part.Replace("%", ""), out sctRate);
-        //    }
-
-        //    if (cmbVAT.SelectedIndex > 0 && cmbVAT.SelectedItem != null)
-        //    {
-        //        string txt = cmbVAT.SelectedItem.ToString();
-        //        if (isTurkish && txt.StartsWith("%"))
-        //            decimal.TryParse(txt.Split(' ')[0].Replace("%", ""), out vatRate);
-        //        else
-        //            foreach (var part in txt.Split(' '))
-        //                if (part.Contains("%"))
-        //                    decimal.TryParse(part.Replace("%", ""), out vatRate);
-        //    }
-
-        //    // --- İndirim ---
-        //    decimal yuzdeIndirim = GetSelectedDiscountPercent();
-        //    decimal ekIndirim = nmrDisc.Value;
-
-        //    // --- Kargo ---
-        //    decimal cargoFee = nmrCargo.Value;
-
-        //    // --- Yabancı para var mı kontrol et ---
-        //    bool needsExchange = lwDisc.Items
-        //        .Cast<ListViewItem>()
-        //        .Any(it => it.Checked && !IsTL(it.SubItems[COL_CURRENCY].Text));
-
-        //    Dictionary<string, (decimal BuyRate, decimal SellRate)> exchangeRates = null;
-        //    if (needsExchange)
-        //    {
-        //        try
-        //        {
-        //            var forexService = new FREEMARKETforex();
-        //            exchangeRates = await forexService.GetExchangeRatesAsync();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            System.Diagnostics.Debug.WriteLine(isTurkish
-        //                ? $"Döviz kurları alınırken hata: {ex.Message}"
-        //                : $"Error occurred while fetching exchange rates: {ex.Message}");
-        //        }
-        //    }
-
-        //    decimal totalTaxAmount = 0m;
-
-        //    foreach (ListViewItem item in lwDisc.Items)
-        //    {
-        //        if (!item.Checked) continue;
-
-        //        decimal orijinalTutar = item.Tag is decimal d ? d : 0m;
-        //        string currency = item.SubItems[COL_CURRENCY].Text;
-        //        bool isForeignCurrency = !IsTL(currency);
-
-        //        // --- 1) İndirim ---
-        //        decimal yuzdeselIndirimMiktar = (orijinalTutar * yuzdeIndirim) / 100m;
-        //        decimal toplamIndirim = yuzdeselIndirimMiktar + ekIndirim;
-        //        decimal tutarIndirimli = orijinalTutar - toplamIndirim;
-        //        if (tutarIndirimli < 0) tutarIndirimli = 0;
-
-        //        // --- 2) Vergiler ---
-        //        decimal otvTutar = (tutarIndirimli * sctRate) / 100m;
-        //        decimal tutarOtv = tutarIndirimli + otvTutar;
-
-        //        decimal kdvTutar = (tutarOtv * vatRate) / 100m;
-        //        decimal tutarSon = tutarOtv + kdvTutar;
-
-        //        // --- 3) Kargo ekle (vergiye dahil değil) ---
-        //        decimal tutarFinal = tutarSon + cargoFee;
-
-        //        // --- Vergi metinleri ---
-        //        string sctText = sctRate > 0 ? $"%{sctRate}" : (isTurkish ? "ÖTV Yok" : "No Excise Tax");
-        //        string vatText = vatRate > 0 ? $"%{vatRate}" : (isTurkish ? "KDV Yok" : "No VAT");
-
-        //        decimal sctInTL = 0m;
-        //        decimal vatInTL = 0m;
-
-        //        if (!isForeignCurrency)
-        //        {
-        //            sctInTL = otvTutar;
-        //            vatInTL = kdvTutar;
-
-        //            if (sctRate > 0) sctText += $" ({sctInTL:F2} TL)";
-        //            if (vatRate > 0) vatText += $" ({vatInTL:F2} TL)";
-        //        }
-        //        else if ((sctRate > 0 || vatRate > 0) && exchangeRates != null)
-        //        {
-        //            try
-        //            {
-        //                var rateKey = exchangeRates.Keys.FirstOrDefault(k => k.Contains(currency, StringComparison.OrdinalIgnoreCase));
-        //                if (rateKey != null)
-        //                {
-        //                    decimal exchangeRate = exchangeRates[rateKey].SellRate;
-        //                    if (sctRate > 0)
-        //                    {
-        //                        sctInTL = otvTutar * exchangeRate;
-        //                        sctText += $" ({sctInTL:F2} TL)";
-        //                    }
-        //                    if (vatRate > 0)
-        //                    {
-        //                        vatInTL = kdvTutar * exchangeRate;
-        //                        vatText += $" ({vatInTL:F2} TL)";
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    sctText += sctRate > 0 ? (isTurkish ? " (Kur bulunamadı)" : " (Rate not found)") : "";
-        //                    vatText += vatRate > 0 ? (isTurkish ? " (Kur bulunamadı)" : " (Rate not found)") : "";
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                System.Diagnostics.Debug.WriteLine($"Döviz kuru hesaplanırken hata: {ex.Message}");
-        //                sctText += sctRate > 0 ? (isTurkish ? " (Hesaplanamadı)" : " (Calc error)") : "";
-        //                vatText += vatRate > 0 ? (isTurkish ? " (Hesaplanamadı)" : " (Calc error)") : "";
-        //            }
-        //        }
-
-        //        totalTaxAmount += sctInTL + vatInTL;
-
-        //        // --- ListView güncelle ---
-        //        item.SubItems[COL_TOTAL].Text = tutarFinal.ToString("F2");
-
-        //        string discStatus;
-        //        if (yuzdeIndirim > 0 && ekIndirim > 0)
-        //            discStatus = $"%{yuzdeIndirim} (+{ekIndirim:F2})";
-        //        else if (yuzdeIndirim > 0)
-        //            discStatus = $"%{yuzdeIndirim}";
-        //        else if (ekIndirim > 0)
-        //            discStatus = $"+{ekIndirim:F2}";
-        //        else
-        //            discStatus = isTurkish ? "İndirim Yok" : "No Discount";
-
-        //        item.SubItems[COL_DISC_STATUS].Text = discStatus;
-        //        item.SubItems[COL_DISC_AMOUNT].Text = toplamIndirim.ToString("F2");
-        //        item.SubItems[COL_SCT].Text = sctText;
-        //        item.SubItems[COL_VAT].Text = vatText;
-
-        //        nmrTotalTax.Value = totalTaxAmount;
-
-        //        UpdateMessage();
-        //    }
-        //}
-
 
         private bool IsTL(string currency)
         {
@@ -1676,26 +1489,20 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-
         private void UpdateMessage()
         {
-            // Para birimine göre toplamları hesapla
+            // lwTotal'dan para birimi ve toplamları al
             Dictionary<string, decimal> currencyTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (ListViewItem item in lwDisc.Items)
+            foreach (ListViewItem item in lwTotal.Items)
             {
-                if (!item.Checked) continue;
-
-                string currency = item.SubItems[COL_CURRENCY].Text.Trim();
+                string currency = item.SubItems[0].Text.Trim(); // 1. kolon: Para Birimi
                 if (string.IsNullOrWhiteSpace(currency))
                     currency = türkçeToolStripMenuItem.Checked ? "TL" : "TRY";
 
-                if (decimal.TryParse(item.SubItems[COL_TOTAL].Text, out decimal val))
+                if (decimal.TryParse(item.SubItems[1].Text, out decimal val)) // 2. kolon: Toplam
                 {
-                    if (currencyTotals.ContainsKey(currency))
-                        currencyTotals[currency] += val;
-                    else
-                        currencyTotals[currency] = val;
+                    currencyTotals[currency] = val;
                 }
             }
 
@@ -1819,7 +1626,6 @@ namespace neoStockMasterv2.Forms
             }
             else
             {
-                // Eğer exe yoksa Store URL üzerinden açmayı deneyebiliriz
                 btnWhatsapp.Tag = "store"; // WhatsApp Microsoft Store
                 btnWhatsapp.Enabled = true; // Yine de buton aktif
             }
@@ -1877,5 +1683,119 @@ namespace neoStockMasterv2.Forms
                 }
             }
         }
+
+        private void lwDisc_MouseClick(object sender, MouseEventArgs e)
+        {
+            var info = lwDisc.HitTest(e.Location);
+            if (info.Item != null) // bir satıra tıklanmışsa
+            {
+                // Checkbox durumunu tersine çevir
+                info.Item.Checked = !info.Item.Checked;
+            }
+        }
+
+        private void InitTotalListViewTotal()
+        {
+            lwTotal.View = View.Details;
+            lwTotal.HeaderStyle = ColumnHeaderStyle.None; // Başlıkları gizle
+            lwTotal.FullRowSelect = true;
+            lwTotal.GridLines = true;
+
+            lwTotal.Columns.Clear();
+            lwTotal.Columns.Add("", 90); // Para Birimi
+            lwTotal.Columns.Add("", 60); // Toplam
+        }
+
+        private void InitTotalListViewDisc()
+        {
+            lwDiscList.View = View.Details;
+            lwDiscList.HeaderStyle = ColumnHeaderStyle.None; // Başlıkları gizle
+            lwDiscList.FullRowSelect = true;
+            lwDiscList.GridLines = true;
+
+            lwDiscList.Columns.Clear();
+            lwDiscList.Columns.Add("", 90); // Para Birimi
+            lwDiscList.Columns.Add("", 60); // Toplam
+        }
+
+        private void InitTotalListViewTax()
+        {
+            lwTax.View = View.Details;
+            lwTax.HeaderStyle = ColumnHeaderStyle.None; // Başlıkları gizle
+            lwTax.FullRowSelect = true;
+            lwTax.GridLines = true;
+
+            lwTax.Columns.Clear();
+            lwTax.Columns.Add("", 70); // Para Birimi
+            lwTax.Columns.Add("", 80); // Toplam
+        }
+
+        private void UpdateTotalsFromDisc()
+        {
+            var currencyTotals = new Dictionary<string, decimal>();
+
+            foreach (ListViewItem item in lwDisc.Items)
+            {
+                if (!decimal.TryParse(item.SubItems[COL_TOTAL].Text, out decimal total))
+                    continue;
+
+                string currency = item.SubItems[COL_CURRENCY].Text.Trim();
+                if (string.IsNullOrEmpty(currency)) continue;
+
+                if (currencyTotals.ContainsKey(currency))
+                    currencyTotals[currency] += total;
+                else
+                    currencyTotals[currency] = total;
+            }
+
+            lwTotal.Items.Clear();
+
+            foreach (var kvp in currencyTotals)
+            {
+                ListViewItem row = new ListViewItem(kvp.Key); // 1. kolon: Para Birimi
+                row.SubItems.Add(kvp.Value.ToString("N2"));   // 2. kolon: Toplam
+                lwTotal.Items.Add(row);
+            }
+        }
+
+        private void UpdateDiscsFromDisc()
+        {
+            var currencyTotals = new Dictionary<string, decimal>();
+
+            foreach (ListViewItem item in lwDisc.Items)
+            {
+                if (!decimal.TryParse(item.SubItems[COL_DISC_AMOUNT].Text, out decimal total))
+                    continue;
+
+                string currency = item.SubItems[COL_CURRENCY].Text.Trim();
+                if (string.IsNullOrEmpty(currency)) continue;
+
+                if (currencyTotals.ContainsKey(currency))
+                    currencyTotals[currency] += total;
+                else
+                    currencyTotals[currency] = total;
+            }
+
+            lwDiscList.Items.Clear();
+
+            foreach (var kvp in currencyTotals)
+            {
+                ListViewItem row = new ListViewItem(kvp.Key); // 1. kolon: Para Birimi
+                row.SubItems.Add(kvp.Value.ToString("N2"));   // 2. kolon: İndirim Toplamı
+                lwDiscList.Items.Add(row);
+            }
+        }
+
+        private void ResetTax()
+        {
+            lwTax.Items.Clear();
+            var row = new ListViewItem("Türk Lirası");
+            row.SubItems.Add("0,00");
+            lwTax.Items.Add(row);
+        }
+
+
+
+
     }
 }

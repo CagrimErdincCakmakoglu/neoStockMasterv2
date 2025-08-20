@@ -28,14 +28,17 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PricingOrderScreen));
             menuStripLanguage = new MenuStrip();
             türkçeToolStripMenuItem = new ToolStripMenuItem();
             englishToolStripMenuItem = new ToolStripMenuItem();
             grbPriceDetails = new GroupBox();
+            lwTax = new ListView();
+            lwDiscList = new ListView();
+            lwTotal = new ListView();
             grbCargo = new GroupBox();
             nmrCargo = new NumericUpDown();
-            lblTaxIcon = new Label();
             lwDisc = new ListView();
             chbLockForex = new CheckBox();
             chbLockPrice = new CheckBox();
@@ -45,11 +48,8 @@
             grbDisc = new GroupBox();
             nmrDisc = new NumericUpDown();
             cmbDisc = new ComboBox();
-            nmrTotalTax = new NumericUpDown();
             lblTotalTax = new Label();
-            nmrTotalDisc = new NumericUpDown();
             lblTotalDisc = new Label();
-            nmrTotalPrice = new NumericUpDown();
             lblTotalPrice = new Label();
             dgwProducts = new DataGridView();
             grbCustomerMsg = new GroupBox();
@@ -68,6 +68,7 @@
             cmbOrderStatus = new ComboBox();
             cmbPayment = new ComboBox();
             dgwOrderDetails = new DataGridView();
+            ttAll = new ToolTip(components);
             menuStripLanguage.SuspendLayout();
             grbPriceDetails.SuspendLayout();
             grbCargo.SuspendLayout();
@@ -75,9 +76,6 @@
             grbTax.SuspendLayout();
             grbDisc.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nmrDisc).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)nmrTotalTax).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)nmrTotalDisc).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)nmrTotalPrice).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgwProducts).BeginInit();
             grbCustomerMsg.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbScale).BeginInit();
@@ -113,18 +111,17 @@
             // 
             // grbPriceDetails
             // 
+            grbPriceDetails.Controls.Add(lwTax);
+            grbPriceDetails.Controls.Add(lwDiscList);
+            grbPriceDetails.Controls.Add(lwTotal);
             grbPriceDetails.Controls.Add(grbCargo);
-            grbPriceDetails.Controls.Add(lblTaxIcon);
             grbPriceDetails.Controls.Add(lwDisc);
             grbPriceDetails.Controls.Add(chbLockForex);
             grbPriceDetails.Controls.Add(chbLockPrice);
             grbPriceDetails.Controls.Add(grbTax);
             grbPriceDetails.Controls.Add(grbDisc);
-            grbPriceDetails.Controls.Add(nmrTotalTax);
             grbPriceDetails.Controls.Add(lblTotalTax);
-            grbPriceDetails.Controls.Add(nmrTotalDisc);
             grbPriceDetails.Controls.Add(lblTotalDisc);
-            grbPriceDetails.Controls.Add(nmrTotalPrice);
             grbPriceDetails.Controls.Add(lblTotalPrice);
             grbPriceDetails.Controls.Add(dgwProducts);
             grbPriceDetails.Location = new Point(12, 27);
@@ -133,6 +130,30 @@
             grbPriceDetails.TabIndex = 1;
             grbPriceDetails.TabStop = false;
             grbPriceDetails.Text = "Fiyat Detayları";
+            // 
+            // lwTax
+            // 
+            lwTax.Location = new Point(531, 221);
+            lwTax.Name = "lwTax";
+            lwTax.Size = new Size(154, 67);
+            lwTax.TabIndex = 15;
+            lwTax.UseCompatibleStateImageBehavior = false;
+            // 
+            // lwDiscList
+            // 
+            lwDiscList.Location = new Point(341, 221);
+            lwDiscList.Name = "lwDiscList";
+            lwDiscList.Size = new Size(154, 67);
+            lwDiscList.TabIndex = 14;
+            lwDiscList.UseCompatibleStateImageBehavior = false;
+            // 
+            // lwTotal
+            // 
+            lwTotal.Location = new Point(88, 221);
+            lwTotal.Name = "lwTotal";
+            lwTotal.Size = new Size(154, 67);
+            lwTotal.TabIndex = 13;
+            lwTotal.UseCompatibleStateImageBehavior = false;
             // 
             // grbCargo
             // 
@@ -155,26 +176,18 @@
             nmrCargo.ValueChanged += nmrCargo_ValueChanged;
             nmrCargo.KeyUp += nmrCargo_KeyUp;
             // 
-            // lblTaxIcon
-            // 
-            lblTaxIcon.AutoSize = true;
-            lblTaxIcon.Location = new Point(642, 226);
-            lblTaxIcon.Name = "lblTaxIcon";
-            lblTaxIcon.Size = new Size(13, 15);
-            lblTaxIcon.TabIndex = 11;
-            lblTaxIcon.Text = "₺";
-            // 
             // lwDisc
             // 
-            lwDisc.Location = new Point(6, 252);
+            lwDisc.Location = new Point(6, 294);
             lwDisc.MultiSelect = false;
             lwDisc.Name = "lwDisc";
-            lwDisc.Size = new Size(679, 136);
+            lwDisc.Size = new Size(679, 94);
             lwDisc.TabIndex = 10;
             lwDisc.UseCompatibleStateImageBehavior = false;
             lwDisc.ColumnWidthChanging += lwDisc_ColumnWidthChanging;
             lwDisc.ItemCheck += lwDisc_ItemCheck;
             lwDisc.ItemChecked += lwDisc_ItemChecked;
+            lwDisc.MouseClick += lwDisc_MouseClick;
             // 
             // chbLockForex
             // 
@@ -265,34 +278,14 @@
             cmbDisc.TabIndex = 2;
             cmbDisc.SelectedIndexChanged += cmbDisc_SelectedIndexChanged;
             // 
-            // nmrTotalTax
-            // 
-            nmrTotalTax.DecimalPlaces = 2;
-            nmrTotalTax.Enabled = false;
-            nmrTotalTax.Location = new Point(537, 221);
-            nmrTotalTax.Maximum = new decimal(new int[] { 1661992959, 1808227885, 5, 0 });
-            nmrTotalTax.Name = "nmrTotalTax";
-            nmrTotalTax.Size = new Size(99, 23);
-            nmrTotalTax.TabIndex = 6;
-            // 
             // lblTotalTax
             // 
             lblTotalTax.AutoSize = true;
-            lblTotalTax.Location = new Point(498, 223);
+            lblTotalTax.Location = new Point(498, 226);
             lblTotalTax.Name = "lblTotalTax";
             lblTotalTax.Size = new Size(33, 15);
             lblTotalTax.TabIndex = 5;
             lblTotalTax.Text = "Vergi";
-            // 
-            // nmrTotalDisc
-            // 
-            nmrTotalDisc.DecimalPlaces = 2;
-            nmrTotalDisc.Enabled = false;
-            nmrTotalDisc.Location = new Point(341, 221);
-            nmrTotalDisc.Maximum = new decimal(new int[] { 1661992959, 1808227885, 5, 0 });
-            nmrTotalDisc.Name = "nmrTotalDisc";
-            nmrTotalDisc.Size = new Size(120, 23);
-            nmrTotalDisc.TabIndex = 4;
             // 
             // lblTotalDisc
             // 
@@ -303,20 +296,10 @@
             lblTotalDisc.TabIndex = 3;
             lblTotalDisc.Text = "Toplam İndirim";
             // 
-            // nmrTotalPrice
-            // 
-            nmrTotalPrice.DecimalPlaces = 2;
-            nmrTotalPrice.Enabled = false;
-            nmrTotalPrice.Location = new Point(101, 221);
-            nmrTotalPrice.Maximum = new decimal(new int[] { 1661992959, 1808227885, 5, 0 });
-            nmrTotalPrice.Name = "nmrTotalPrice";
-            nmrTotalPrice.Size = new Size(120, 23);
-            nmrTotalPrice.TabIndex = 2;
-            // 
             // lblTotalPrice
             // 
             lblTotalPrice.AutoSize = true;
-            lblTotalPrice.Location = new Point(19, 223);
+            lblTotalPrice.Location = new Point(6, 223);
             lblTotalPrice.Name = "lblTotalPrice";
             lblTotalPrice.Size = new Size(76, 15);
             lblTotalPrice.TabIndex = 1;
@@ -534,9 +517,6 @@
             grbTax.ResumeLayout(false);
             grbDisc.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)nmrDisc).EndInit();
-            ((System.ComponentModel.ISupportInitialize)nmrTotalTax).EndInit();
-            ((System.ComponentModel.ISupportInitialize)nmrTotalDisc).EndInit();
-            ((System.ComponentModel.ISupportInitialize)nmrTotalPrice).EndInit();
             ((System.ComponentModel.ISupportInitialize)dgwProducts).EndInit();
             grbCustomerMsg.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)pbScale).EndInit();
@@ -555,10 +535,7 @@
         private GroupBox grbPriceDetails;
         private Label lblTotalPrice;
         private DataGridView dgwProducts;
-        private NumericUpDown nmrTotalPrice;
-        private NumericUpDown nmrTotalTax;
         private Label lblTotalTax;
-        private NumericUpDown nmrTotalDisc;
         private Label lblTotalDisc;
         private GroupBox grbDisc;
         private NumericUpDown nmrDisc;
@@ -585,8 +562,11 @@
         private CheckBox chbLockPrice;
         private ListView lwDisc;
         private PictureBox pbScale;
-        private Label lblTaxIcon;
         private GroupBox grbCargo;
         private NumericUpDown nmrCargo;
+        private ListView lwDiscList;
+        private ListView lwTotal;
+        private ListView lwTax;
+        private ToolTip ttAll;
     }
 }

@@ -17,16 +17,11 @@ namespace neoStockMasterv2.Data.Entities
         public DateTime RegistrationDate { get; set; }
         public int UsageRemainingDays { get; set; }
         public int RemainingDays { get; set; }
-
         public string Language { get; set; }
 
-        //[JsonProperty]
-        //public HashSet<string> LastLoginIps { get; private set; } = new HashSet<string>();
 
         [JsonProperty]
         public List<LoginRecord> LoginHistory { get; private set; } = new List<LoginRecord>();
-
-        //public List<UserAction> Actions { get; set; } = new List<UserAction>();
 
         [JsonProperty]
         public string VerificationCode { get;  private set; }
@@ -78,19 +73,5 @@ namespace neoStockMasterv2.Data.Entities
                 });
             }
         }
-
-        //public void AddAction(string description)
-        //{
-        //    Actions.Add(new UserAction
-        //    {
-        //        Timestamp = DateTime.Now,
-        //        ActionDescription = description
-        //    });
-
-        //    if (Actions.Count > 30)
-        //    {
-        //        Actions.RemoveAt(0); // En eskiyi sil
-        //    }
-        //}
     }
 }

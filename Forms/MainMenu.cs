@@ -238,7 +238,7 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-        private void OpenPricingOrdeScreen()
+        private void OpenPricingOrderScreen()
         {
             string currentLanguage = LanguageService.CurrentLanguage; // Mevcut dili al
 
@@ -258,7 +258,7 @@ namespace neoStockMasterv2.Forms
 
         private void btnCalculatePriceAddOrder_Click(object sender, EventArgs e)
         {
-            OpenPricingOrdeScreen();
+            OpenPricingOrderScreen();
         }
     }
 }

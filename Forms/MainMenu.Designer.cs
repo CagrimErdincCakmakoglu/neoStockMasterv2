@@ -212,8 +212,8 @@
         private Button btnViewOrdersEditOrders;
         private Button btnCalculatePriceAddOrder;
         private Button btnProductManagement;
-        private CheckBox chbTop;
         private Button btnLogOut;
         private Button btnAboutUser;
+        public CheckBox chbTop;
     }
 }

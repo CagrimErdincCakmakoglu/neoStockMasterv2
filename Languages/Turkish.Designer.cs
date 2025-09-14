@@ -106,6 +106,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Bütün Tabloları Genişlet.
+        /// </summary>
+        internal static string Bütün_Tabloları_Genişlet {
+            get {
+                return ResourceManager.GetString("Bütün Tabloları Genişlet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Çarpraz Kurlar.
         /// </summary>
         internal static string Çarpraz_Kurlar {
@@ -736,6 +745,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tablo Kontrolleri.
+        /// </summary>
+        internal static string Tablo_Kontrolleri {
+            get {
+                return ResourceManager.GetString("Tablo Kontrolleri", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Temizle.
         /// </summary>
         internal static string Temizle {
@@ -754,11 +772,29 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Toplam İndirim&apos;i Genişlet.
+        /// </summary>
+        internal static string Toplam_İndirim_i_Genişlet {
+            get {
+                return ResourceManager.GetString("Toplam İndirim\'i Genişlet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Toplam Tutar.
         /// </summary>
         internal static string Toplam_Tutar {
             get {
                 return ResourceManager.GetString("Toplam Tutar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Toplam Tutar&apos;ı Genişlet.
+        /// </summary>
+        internal static string Toplam_Tutar_ı_Genişlet {
+            get {
+                return ResourceManager.GetString("Toplam Tutar\'ı Genişlet", resourceCulture);
             }
         }
         
@@ -868,6 +904,15 @@ namespace neoStockMasterv2.Languages {
         internal static string Vergi {
             get {
                 return ResourceManager.GetString("Vergi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Vergi’yi Genişlet.
+        /// </summary>
+        internal static string VergiyiGenişlet {
+            get {
+                return ResourceManager.GetString("VergiyiGenişlet", resourceCulture);
             }
         }
         

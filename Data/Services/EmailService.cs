@@ -5,6 +5,9 @@ using System.Net.Mail;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using OfficeOpenXml;
+using OfficeOpenXml.Table; // EPPlus tablolar için
+using System.IO;
 
 namespace neoStockMasterv2.Data.Services
 {
@@ -152,49 +155,239 @@ namespace neoStockMasterv2.Data.Services
             }
         }
 
-        public void SendOrderAddedEmail(string recipientEmail, string recipientName, string recipientPhone, decimal totalAmount, List<string> orderDetails)
+        public void SendOrderWithExcelAttachment(
+    string recipientEmail,
+    string recipientName,
+    decimal totalAmount,
+    DataGridView dgwOrderDetails,
+    ListView lwDisc,
+    ListView lwTotal,
+    ListView lwDiscList,
+    ListView lwTax,
+    ComboBox cmbDisc,
+    NumericUpDown nmrDisc,
+    ComboBox cmbSCT,
+    ComboBox cmbVAT,
+    NumericUpDown nmrCargo,
+    TextBox txtCustomerName,
+    MaskedTextBox mskPhoneNo,
+    DateTime createdDate,
+    string userLanguage,
+    string userPassword
+)
         {
             try
             {
-                // Sipariş içeriği metnini oluşturma
-                StringBuilder orderDetailsBuilder = new StringBuilder();
-                foreach (var item in orderDetails)
-                {
-                    orderDetailsBuilder.AppendLine($"- {item}");
-                }
+                bool isTurkish = userLanguage?.Equals("Türkçe", StringComparison.OrdinalIgnoreCase) ?? true;
 
-                // Mail mesajı oluşturma
-                MailMessage mailMessage = new MailMessage
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                using (var package = new ExcelPackage())
                 {
-                    From = new MailAddress(senderEmail),
-                    Subject = "Sipariş Eklendi!",
-                    Body = $"Merhaba,\n\n" +
-                           $"Siparişiniz başarıyla alınmıştır. İşte siparişinizin detayları:\n\n" +
-                           $"Adı: {recipientName}\n" +
-                           $"Telefon: {recipientPhone}\n" +
-                           $"Ödenecek Tutar: {totalAmount:C2}\n\n" +
-                           $"Sipariş İçeriği:\n{orderDetailsBuilder.ToString()}\n\n" +
-                           "En iyi dileklerimle,\n\n[Stock Master]",
-                    IsBodyHtml = false // HTML içeriği kullanmak isterseniz true yapın
-                };
+                    // === Sipariş İçeriği ===
+                    var wsOrderDetails = package.Workbook.Worksheets.Add(isTurkish ? "Sipariş İçeriği" : "Order Content");
+                    ExportDataGridViewToWorksheet(dgwOrderDetails, wsOrderDetails);
 
-                mailMessage.To.Add(new MailAddress(recipientEmail));
+                    // === İndirim Tablosu ===
+                    var wsDisc = package.Workbook.Worksheets.Add(isTurkish ? "İndirim Tablosu" : "Discount Table");
+                    ExportListViewToWorksheet(lwDisc, wsDisc);
 
-                // SMTP istemcisi ayarları
-                using (SmtpClient smtpClient = new SmtpClient(smtpClientAddress, smtpPort)
-                {
-                    Credentials = new NetworkCredential(senderEmail, senderPassword),
-                    EnableSsl = true
-                })
-                {
-                    // Mail gönderme
-                    smtpClient.Send(mailMessage);
+                    // === Toplam Tutar ===
+                    var wsTotal = package.Workbook.Worksheets.Add(isTurkish ? "Toplam Tutar" : "Total Amount");
+                    ExportListViewToWorksheet(lwTotal, wsTotal);
+
+                    // === Ek İndirim ===
+                    var wsDiscList = package.Workbook.Worksheets.Add(isTurkish ? "Ek İndirim" : "Extra Discount");
+                    ExportListViewToWorksheet(lwDiscList, wsDiscList);
+
+                    // === Vergiler ===
+                    var wsTax = package.Workbook.Worksheets.Add(isTurkish ? "Vergiler" : "Taxes");
+                    ExportListViewToWorksheet(lwTax, wsTax);
+
+                    // === Bilgiler ===
+                    var wsInfo = package.Workbook.Worksheets.Add(isTurkish ? "Bilgiler" : "Info");
+                    wsInfo.Cells[1, 1].Value = isTurkish ? "Müşteri Adı" : "Customer Name";
+                    wsInfo.Cells[1, 2].Value = txtCustomerName.Text;
+
+                    wsInfo.Cells[2, 1].Value = isTurkish ? "Telefon" : "Phone";
+                    wsInfo.Cells[2, 2].Value = mskPhoneNo.Text;
+
+                    // İndirim satırı
+                    string discountText = cmbDisc.Text;
+                    if (nmrDisc.Value > 0)
+                        discountText += $" +{nmrDisc.Value}";
+                    wsInfo.Cells[3, 1].Value = isTurkish ? "İndirim" : "Discount";
+                    wsInfo.Cells[3, 2].Value = discountText;
+
+                    wsInfo.Cells[4, 1].Value = isTurkish ? "ÖTV" : "SCT";
+                    wsInfo.Cells[4, 2].Value = cmbSCT.Text;
+
+                    wsInfo.Cells[5, 1].Value = isTurkish ? "KDV" : "VAT";
+                    wsInfo.Cells[5, 2].Value = cmbVAT.Text;
+
+                    wsInfo.Cells[6, 1].Value = isTurkish ? "Kargo" : "Cargo";
+                    wsInfo.Cells[6, 2].Value = nmrCargo.Value;
+
+                    wsInfo.Cells[7, 1].Value = isTurkish ? "Oluşturulma Tarihi" : "Created Date";
+                    wsInfo.Cells[7, 2].Value = createdDate.ToString("dd.MM.yyyy HH:mm");
+
+                    // === Otomatik kolon genişliği + hücre koruma ===
+                    foreach (var ws in package.Workbook.Worksheets)
+                    {
+                        if (ws.Dimension != null)
+                        {
+                            // Kolon genişliği
+                            ws.Cells[ws.Dimension.Address].AutoFitColumns();
+                            for (int col = ws.Dimension.Start.Column; col <= ws.Dimension.End.Column; col++)
+                                ws.Column(col).BestFit = true;
+
+                            // Tüm hücreleri kilitle
+                            ws.Cells[ws.Dimension.Address].Style.Locked = true;
+
+                            // Sayfa koruması
+                            ws.Protection.IsProtected = true;
+                            ws.Protection.SetPassword(userPassword);
+
+                            // Kullanıcıya sadece okuma ve seçim izni ver
+                            ws.Protection.AllowSelectLockedCells = true;
+                            ws.Protection.AllowSelectUnlockedCells = true;
+                            ws.Protection.AllowEditObject = false;
+                            ws.Protection.AllowEditScenarios = false;
+                            ws.Protection.AllowFormatCells = false;
+                            ws.Protection.AllowFormatColumns = false;
+                            ws.Protection.AllowFormatRows = false;
+                            ws.Protection.AllowInsertColumns = false;
+                            ws.Protection.AllowInsertRows = false;
+                            ws.Protection.AllowDeleteColumns = false;
+                            ws.Protection.AllowDeleteRows = false;
+                        }
+                    }
+
+                    // === Workbook koruması (sayfa ekleme/silme engeli) ===
+                    package.Workbook.Protection.SetPassword(userPassword);
+                    package.Workbook.Protection.LockStructure = true;
+
+                    // Belleğe kaydet
+                    using (var stream = new MemoryStream())
+                    {
+                        package.SaveAs(stream);
+                        stream.Position = 0;
+
+                        // === Mail başlığı ===
+                        string subject = isTurkish
+                            ? $"{txtCustomerName.Text} Siparişi Alındı!"
+                            : $"{txtCustomerName.Text} Order Received!";
+
+                        // === Mail gövdesi (lwTotal’den dinamik) ===
+                        List<string> amounts = new List<string>();
+                        foreach (ListViewItem item in lwTotal.Items)
+                        {
+                            if (item.SubItems.Count >= 2)
+                            {
+                                string currency = item.SubItems[0].Text;
+                                string value = item.SubItems[1].Text;
+
+                                if (!string.IsNullOrWhiteSpace(currency) && !string.IsNullOrWhiteSpace(value))
+                                {
+                                    amounts.Add($"{value} {currency}");
+                                }
+                            }
+                        }
+
+                        string joinedAmounts = "";
+                        if (amounts.Count == 1)
+                        {
+                            joinedAmounts = amounts[0];
+                        }
+                        else if (amounts.Count == 2)
+                        {
+                            joinedAmounts = $"{amounts[0]} ve {amounts[1]}";
+                        }
+                        else if (amounts.Count > 2)
+                        {
+                            joinedAmounts = string.Join(", ", amounts.Take(amounts.Count - 1))
+                                            + " ve " + amounts.Last();
+                        }
+
+                        string body = isTurkish
+                            ? $"Merhaba {recipientName},\n\n{joinedAmounts} tutarındaki siparişiniz sisteme kayıt edilmiştir."
+                            : $"Hello {recipientName},\n\nYour order of {joinedAmounts} has been recorded in the system.";
+
+                        // === Mail oluşturma ===
+                        MailMessage mailMessage = new MailMessage
+                        {
+                            From = new MailAddress(senderEmail, "StockMaster"),
+                            Subject = subject,
+                            Body = body,
+                            IsBodyHtml = false
+                        };
+                        mailMessage.To.Add(new MailAddress(recipientEmail));
+
+                        // Excel dosya adı
+                        string excelName = isTurkish
+                            ? $"{txtCustomerName.Text} Sipariş Detayları.xlsx"
+                            : $"{txtCustomerName.Text} Order Details.xlsx";
+
+                        mailMessage.Attachments.Add(new Attachment(stream, excelName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+
+                        using (SmtpClient smtpClient = new SmtpClient(smtpClientAddress, smtpPort)
+                        {
+                            Credentials = new NetworkCredential(senderEmail, senderPassword),
+                            EnableSsl = true
+                        })
+                        {
+                            smtpClient.Send(mailMessage);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"E-posta gönderme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+
+        // --- Yardımcılar ---
+        private void ExportDataGridViewToWorksheet(DataGridView dgv, ExcelWorksheet ws)
+        {
+            int col = 1;
+            foreach (DataGridViewColumn column in dgv.Columns)
+            {
+                ws.Cells[1, col].Value = column.HeaderText;
+                col++;
+            }
+
+            int row = 2;
+            foreach (DataGridViewRow dgRow in dgv.Rows)
+            {
+                if (dgRow.IsNewRow) continue;
+                for (int i = 0; i < dgv.Columns.Count; i++)
+                {
+                    ws.Cells[row, i + 1].Value = dgRow.Cells[i].Value?.ToString();
+                }
+                row++;
+            }
+
+            ws.Cells[ws.Dimension.Address].AutoFitColumns();
+        }
+
+        private void ExportListViewToWorksheet(ListView lv, ExcelWorksheet ws)
+        {
+            for (int i = 0; i < lv.Columns.Count; i++)
+            {
+                ws.Cells[1, i + 1].Value = lv.Columns[i].Text;
+            }
+
+            for (int i = 0; i < lv.Items.Count; i++)
+            {
+                var item = lv.Items[i];
+                for (int j = 0; j < item.SubItems.Count; j++)
+                {
+                    ws.Cells[i + 2, j + 1].Value = item.SubItems[j].Text;
+                }
+            }
+
+            ws.Cells[ws.Dimension.Address].AutoFitColumns();
         }
     }
 }

@@ -400,4 +400,19 @@
   <data name="Para Birimini Kilitle" xml:space="preserve">
     <value>Lock Currency</value>
   </data>
+  <data name="Tablo Kontrolleri" xml:space="preserve">
+    <value>Table Settings</value>
+  </data>
+  <data name="Toplam Tutar'ı Genişlet" xml:space="preserve">
+    <value>Expand Total</value>
+  </data>
+  <data name="Toplam İndirim'i Genişlet" xml:space="preserve">
+    <value>Expand Tax</value>
+  </data>
+  <data name="VergiyiGenişlet" xml:space="preserve">
+    <value>Expand Tax</value>
+  </data>
+  <data name="Bütün Tabloları Genişlet" xml:space="preserve">
+    <value>Expand All Tables</value>
+  </data>
 </root>

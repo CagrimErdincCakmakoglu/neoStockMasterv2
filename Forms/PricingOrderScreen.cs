@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+
 namespace neoStockMasterv2.Forms
 {
     public partial class PricingOrderScreen : Form
@@ -26,6 +27,9 @@ namespace neoStockMasterv2.Forms
         private bool isExpanded = false;    // Başlangıçta kapalı varsayıyoruz
         private int originalHeight;         // GroupBox'ın orijinal yüksekliği
 
+        private ListView hoveredListView; // Hangi ListView'de hover olduğunu tutar
+        private bool isHovering = false;
+
         // --- lwDisc kolon indeksleri (SubItems) ---
         const int COL_CHECKBOX = 0;     // 0: Checkbox (ListViewItem.Checkbox alanı, otomatik)
         const int COL_NAME = 1;         // 1: Ürün Adı
@@ -36,6 +40,7 @@ namespace neoStockMasterv2.Forms
         const int COL_SCT = 6;          // 6: ÖTV Durumu
         const int COL_VAT = 7;          // 7: KDV Durumu 
 
+        private ToolTip ttAll = new ToolTip();
 
         public PricingOrderScreen(string currentLanguage)
         {
@@ -53,8 +58,7 @@ namespace neoStockMasterv2.Forms
             cmbSCT.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
             cmbVAT.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
 
-            this.Height = 580; // Form başlangıç yüksekliği grbCustomerMsg daraltılmış geldiği için
-
+            this.Height = 555; // Form başlangıç yüksekliği grbCustomerMsg daraltılmış geldiği için
         }
 
         private void PricingOrderScreen_Load(object sender, EventArgs e)
@@ -89,6 +93,9 @@ namespace neoStockMasterv2.Forms
             InitTotalListViewTotal(); // Toplam ListView'ı başlat
             InitTotalListViewDisc(); // İndirim ListView'ı başlat
             InitTotalListViewTax(); // Vergi ListView'ı başlat
+
+            InitializeHoverTooltips(); // Form üzerindeki bütün lw'lere tooltip ekle
+            MakeRichTextBoxUnselectable(rchMessage);
         }
 
         private void LanguageService_LanguageChanged()
@@ -122,6 +129,11 @@ namespace neoStockMasterv2.Forms
             btnAddOrder.Text = LanguageService.GetString("Sipariş Ekle");
             chbLockPrice.Text = LanguageService.GetString("Fiyatları Kilitle");
             chbLockForex.Text = LanguageService.GetString("Para Birimini Kilitle");
+            grbTable.Text = LanguageService.GetString("Tablo Kontrolleri");
+            btnTotal.Text = LanguageService.GetString("Toplam Tutar'ı Genişlet");
+            btnDisc.Text = LanguageService.GetString("Toplam İndirim'i Genişlet");
+            btnTax.Text = LanguageService.GetString("VergiyiGenişlet");
+            btnAll.Text = LanguageService.GetString("Bütün Tabloları Genişlet");
 
             this.Text = LanguageService.GetString("Fiyat Hesaplama - Sipariş Oluşturma");
 
@@ -390,6 +402,16 @@ namespace neoStockMasterv2.Forms
         {
             if (cmbPayment.SelectedIndex == 0) // 1. seçenek
             {
+                // Otomatik seçimler (sadece item varsa uygula)
+                if (cmbOrderStatus.Items.Count > 0)
+                    cmbOrderStatus.SelectedIndex = 0; // 1. seçenek
+
+                if (cmbCargo.Items.Count > 0)
+                    cmbCargo.SelectedIndex = 0;       // 1. seçenek
+
+                // TextBox ve MaskedTextBox’ları orijinal placeholderlara döndür
+                UpdatePlaceholders();
+
                 cmbOrderStatus.Enabled = false;
                 cmbCargo.Enabled = false;
                 txtCargo.Enabled = false;
@@ -417,6 +439,15 @@ namespace neoStockMasterv2.Forms
         {
             UpdateOrderStatusControls();
 
+            // Ek kural: Eğer 1., 2. veya 3. seçenek seçildiyse
+            if (cmbOrderStatus.SelectedIndex == 0 ||
+                cmbOrderStatus.SelectedIndex == 1 ||
+                cmbOrderStatus.SelectedIndex == 2)
+            {
+                if (cmbCargo.Items.Count > 0)
+                    cmbCargo.SelectedIndex = 0;  // Kargo 1. seçenek
+                UpdatePlaceholders();        // Cargo ve Tracker’ı sıfırla
+            }
         }
 
         private void UpdateOrderStatusControls()
@@ -547,7 +578,6 @@ namespace neoStockMasterv2.Forms
                 ReadOnly = false, // Kullanıcı girebilsin diye false
                 Width = 94
             });
-
         }
 
         private void SetModernHeaderStyle(DataGridView dgv) // BAŞLIKLARIN DAHA MODERN GÖRÜNÜMDE OLMASI İÇİN KULLANILAN METOD
@@ -602,7 +632,6 @@ namespace neoStockMasterv2.Forms
         private void LoadUserProducts() // GİRİŞ YAPAN KULLANICININ ÜRÜNLERİN YÜKLENMESİ
         {
             var products = _productService.GetProductsByLoggedInUser();
-
             dgwProducts.Rows.Clear(); // Önce tabloyu temizle
 
             foreach (var product in products)
@@ -662,7 +691,6 @@ namespace neoStockMasterv2.Forms
                     currencyComboBox.SelectedIndexChanged += CurrencyComboBox_SelectedIndexChanged;
                 }
             }
-
         }
 
         private void ProductCell_TextChanged(object sender, EventArgs e)
@@ -1119,10 +1147,10 @@ namespace neoStockMasterv2.Forms
         private void dgwOrderDetails_Changed(object sender, EventArgs e)
         {
             UpdateListViewFromDGV();
-            UpdateTotalsFromDisc(); // ListView'den toplamları güncelle EKK
-            UpdateDiscsFromDisc(); // EKK
-            ResetTax(); // EKK
-            UpdateMessage(); // EKK
+            UpdateTotalsFromDisc(); // ListView'den toplamları güncelle
+            UpdateDiscsFromDisc();
+            ResetTax();
+            UpdateMessage();
         }
 
         private void UpdateListViewFromDGV()
@@ -1467,7 +1495,7 @@ namespace neoStockMasterv2.Forms
             {
                 // Daralt
                 grbCustomerMsg.Height = 38;
-                this.Height = 580;
+                this.Height = 555;
 
                 // Ok yönünü eski haline döndür
                 pbScale.Image.RotateFlip(RotateFlipType.Rotate180FlipNone);
@@ -1479,7 +1507,7 @@ namespace neoStockMasterv2.Forms
             {
                 // Genişlet
                 grbCustomerMsg.Height = originalHeight;
-                this.Height = 710;
+                this.Height = 722;
 
                 // Oku ters çevir
                 pbScale.Image.RotateFlip(RotateFlipType.Rotate180FlipNone);
@@ -1536,6 +1564,17 @@ namespace neoStockMasterv2.Forms
             }
 
             rchMessage.Text = message;
+        }
+
+        private void MakeRichTextBoxUnselectable(RichTextBox rtb) // RichTextBox içeriğinin seçilmesini engelleme
+        {
+            rtb.ReadOnly = true;  // Düzenlemeyi engeller
+            rtb.TabStop = false;  // Tab ile seçilemeyi engeller
+
+            // Seçimi engellemek için olaylar
+            rtb.MouseDown += (s, e) => { e = null; }; // Mouse tıklamalarını yok say
+            rtb.MouseMove += (s, e) => { rtb.DeselectAll(); }; // Seçimi sürekli kaldır
+            rtb.Enter += (s, e) => { this.ActiveControl = null; }; // Focus olmasını engelle
         }
 
         private void btnCopy_Click(object sender, EventArgs e)
@@ -1789,13 +1828,549 @@ namespace neoStockMasterv2.Forms
         private void ResetTax()
         {
             lwTax.Items.Clear();
+
+            // Eğer dgwOrderDetails tablosunda hiç ürün yoksa boş bırak
+            if (dgwOrderDetails.Rows.Count == 0)
+                return;
+
+            // Eğer ürün varsa ama vergi yoksa Türk Lirası 0,00 yaz
             var row = new ListViewItem("Türk Lirası");
             row.SubItems.Add("0,00");
             lwTax.Items.Add(row);
         }
 
+        private void InitializeHoverTooltips()
+        {
+            // Tooltip davranışını uygulamak istediğimiz tüm ListViewler
+            List<ListView> listViews = new List<ListView> { lwTotal, lwDiscList, lwTax };
+
+            foreach (var lw in listViews)
+            {
+                lw.MouseEnter += lw_MouseEnter;
+                lw.MouseLeave += lw_MouseLeave;
+            }
+
+            hoverTimer.Tick += hoverTimer_Tick;
+        }
+
+        // Ortak event handlerlar
+        private void lw_MouseEnter(object sender, EventArgs e)
+        {
+            isHovering = true;
+            hoveredListView = sender as ListView; // Hangi kontrolde hover olduğunu tutuyoruz
+            hoverTimer.Start();
+        }
+
+        private void lw_MouseLeave(object sender, EventArgs e)
+        {
+            isHovering = false;
+            hoverTimer.Stop();
+            if (sender is ListView lw) ttAll.Hide(lw);
+        }
+
+        private void hoverTimer_Tick(object sender, EventArgs e)
+        {
+            hoverTimer.Stop();
+
+            if (isHovering && hoveredListView != null)
+            {
+                bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+                string msg = isTurkish ? "Detaylı görmek için iki kere tıklayınız" : "Double click to see details";
+
+                // İmlecin olduğu noktayı al
+                var pt = hoveredListView.PointToClient(Cursor.Position);
+
+                // Tooltip göster
+                ttAll.Show(msg, hoveredListView, pt.X + 10, pt.Y + 10, 15000);
+            }
+        }
+        private void btnTotal_Click(object sender, EventArgs e)
+        {
+            // Dil kontrolü
+            bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+
+            // lwTotal boş mu kontrol et
+            if (lwTotal.Items.Count == 0)
+            {
+                string message = isTurkish ? "Gösterilecek veri yok" : "No data to display";
+                MessageBox.Show(message, isTurkish ? "Bilgi" : "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Pencereyi aç
+            var detailForm = new TotalTreeViewForm(lwTotal, lwDisc);
+
+            // Form başlığı dile göre
+            detailForm.Text = isTurkish ? "Toplam ve Detaylar" : "Totals and Details";
+
+            // Form boyutu ve pozisyonu
+            detailForm.Size = new System.Drawing.Size(400, 500);
+            detailForm.StartPosition = FormStartPosition.CenterParent;
+            detailForm.AutoScroll = true;
+
+            // MainMenu'daki chbTop durumuna göre TopMost ayarla
+            var mainMenu = Application.OpenForms["MainMenu"] as MainMenu;
+            if (mainMenu != null && mainMenu.chbTop.Checked)
+            {
+                detailForm.TopMost = true;
+            }
+
+            // Formu göster
+            detailForm.ShowDialog();
+        }
+
+        private void lwTotal_DoubleClick(object sender, EventArgs e)
+        {
+            btnTotal_Click(sender, e);
+        }
+
+        private void btnDisc_Click(object sender, EventArgs e)
+        {
+            // Dil kontrolü
+            bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+
+            // lwDiscList boş mu kontrol et
+            if (lwDiscList.Items.Count == 0)
+            {
+                string message = isTurkish ? "Gösterilecek veri yok" : "No data to display";
+                MessageBox.Show(message, isTurkish ? "Bilgi" : "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Pencereyi aç (sol = indirim toplamları, sağ = indirim detayları)
+            //var detailForm = new TotalTreeViewForm(lwDiscList, lwDisc);
+            var detailForm = new TotalTreeViewForm(lwDiscList, lwDisc, true);
 
 
+            // Form başlığı dile göre
+            detailForm.Text = isTurkish ? "Toplam İndirim ve Detaylar" : "Total Discount and Details";
 
+            // Form boyutu ve pozisyonu
+            detailForm.Size = new System.Drawing.Size(400, 500);
+            detailForm.StartPosition = FormStartPosition.CenterParent;
+            detailForm.AutoScroll = true;
+
+            // MainMenu'daki chbTop durumuna göre TopMost ayarla
+            var mainMenu = Application.OpenForms["MainMenu"] as MainMenu;
+            if (mainMenu != null && mainMenu.chbTop.Checked)
+            {
+                detailForm.TopMost = true;
+            }
+
+            // Formu göster
+            detailForm.ShowDialog();
+        }
+
+        private void lwDiscList_DoubleClick(object sender, EventArgs e)
+        {
+            btnDisc_Click(sender, e);
+        }
+
+        private void btnTax_Click(object sender, EventArgs e)
+        {
+            // Dil kontrolü
+            bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+
+            // lwTax boş mu kontrol et
+            if (lwTax.Items.Count == 0)
+            {
+                string message = isTurkish ? "Gösterilecek veri yok" : "No data to display";
+                MessageBox.Show(message, isTurkish ? "Bilgi" : "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Pencereyi aç (sol = vergi toplamları, sağ = vergi detayları)
+            var detailForm = new TotalTreeViewForm(lwTax, lwDisc, false, true);
+
+            // Form başlığı dile göre
+            detailForm.Text = isTurkish ? "Vergi ve Detaylar" : "Tax and Details";
+
+            // Form boyutu ve pozisyonu
+            detailForm.Size = new System.Drawing.Size(400, 500);
+            detailForm.StartPosition = FormStartPosition.CenterParent;
+            detailForm.AutoScroll = true;
+
+            // MainMenu'daki chbTop durumuna göre TopMost ayarla
+            var mainMenu = Application.OpenForms["MainMenu"] as MainMenu;
+            if (mainMenu != null && mainMenu.chbTop.Checked)
+            {
+                detailForm.TopMost = true;
+            }
+
+            // Formu göster
+            detailForm.ShowDialog();
+        }
+
+        private void lwTax_DoubleClick(object sender, EventArgs e)
+        {
+            btnTax_Click(sender, e);
+        }
+
+        private void btnAll_Click(object sender, EventArgs e)
+        {
+            // Dil kontrolü
+            bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+
+            // Yeni form oluştur
+            Form allTablesForm = new Form();
+            allTablesForm.Text = isTurkish ? "Tüm Tablolar (Sadece Görüntüleme)"
+                                           : "All Tables (View Only)";
+            allTablesForm.Size = new Size(900, 700);
+            allTablesForm.StartPosition = FormStartPosition.CenterParent;
+
+            // Panel (dikey layout için)
+            var panel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 4,
+                AutoSize = true
+            };
+            panel.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
+            panel.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
+            panel.RowStyles.Add(new RowStyle(SizeType.Percent, 25));
+            panel.RowStyles.Add(new RowStyle(SizeType.Percent, 15));
+
+            // Üst üç tablo dikey ekle
+            panel.Controls.Add(CloneDataGridView(dgwProducts), 0, 0);
+            panel.Controls.Add(CloneDataGridView(dgwOrderDetails), 0, 1);
+            panel.Controls.Add(CloneListView(lwDisc), 0, 2);
+
+            // Alt kısımda yatay panel
+            var bottomPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+            };
+            bottomPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            bottomPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            bottomPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+
+            bottomPanel.Controls.Add(CloneListView(lwTotal), 0, 0);
+            bottomPanel.Controls.Add(CloneListView(lwDiscList), 1, 0);
+            bottomPanel.Controls.Add(CloneListView(lwTax), 2, 0);
+
+            panel.Controls.Add(bottomPanel, 0, 3);
+
+            // Form'a ekle ve göster
+            allTablesForm.Controls.Add(panel);
+            allTablesForm.ShowDialog();
+        }
+
+        // Yardımcı metodlar BÜTÜN TABLOLARI YENİ BİR FORMDA GÖSTERMEK İÇİN
+        private DataGridView CloneDataGridView(DataGridView original)
+        {
+            var dgv = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                ReadOnly = true,                  // Tamamen readonly
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowUserToResizeColumns = false, // Kullanıcı sütun genişliğini değiştiremesin
+                AllowUserToResizeRows = false,    // Kullanıcı satır yüksekliğini değiştiremesin
+                AllowUserToOrderColumns = false,  // Kullanıcı sütunları sürükleyemesin
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                RowHeadersVisible = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing // ✅ Başlık yüksekliği sabit
+            };
+
+            foreach (DataGridViewColumn col in original.Columns)
+            {
+                var newCol = (DataGridViewColumn)col.Clone();
+                newCol.ReadOnly = true; // Sütunlar da readonly
+                dgv.Columns.Add(newCol);
+            }
+
+            foreach (DataGridViewRow row in original.Rows)
+            {
+                if (!row.IsNewRow)
+                {
+                    int idx = dgv.Rows.Add();
+                    for (int i = 0; i < row.Cells.Count; i++)
+                    {
+                        dgv.Rows[idx].Cells[i].Value = row.Cells[i].Value;
+                    }
+                }
+            }
+
+            return dgv;
+        }
+
+        private ListView CloneListView(ListView original)
+        {
+            var lv = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = original.View,
+                CheckBoxes = false,          // Kullanıcı işaretleyemesin
+                FullRowSelect = true,
+                GridLines = true,
+                LabelEdit = false,           // Hücre düzenleme kapalı
+                HeaderStyle = original.HeaderStyle
+            };
+
+            foreach (ColumnHeader col in original.Columns)
+            {
+                lv.Columns.Add((ColumnHeader)col.Clone());
+            }
+
+            foreach (ListViewItem item in original.Items)
+            {
+                var newItem = (ListViewItem)item.Clone();
+                lv.Items.Add(newItem);
+            }
+
+            // Kullanıcının sütun genişliklerini değiştirmesini engelle
+            lv.ColumnWidthChanging += (s, e) =>
+            {
+                e.Cancel = true;
+                e.NewWidth = lv.Columns[e.ColumnIndex].Width;
+            };
+
+            return lv;
+        }
+
+        // BÜTÜN TABLOLARI YENİ BİR FORMDA GÖSTERMEK İÇİN BİTİŞ
+
+        private void btnAddOrder_Click(object sender, EventArgs e)
+        {
+            bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+
+            // 1. Müşteri ismi kontrolü
+            string customerName = txtCustomerName.Text.Trim();
+            if (string.IsNullOrWhiteSpace(customerName) ||
+                customerName == "Müşteri İsmini Yazınız" ||
+                customerName == "Enter Customer Name")
+            {
+                MessageBox.Show(
+                    isTurkish ? "Müşteri ismini boş bırakmayınız." : "Please do not leave customer name empty.",
+                    isTurkish ? "Uyarı" : "Warning",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                txtCustomerName.Focus();
+                return;
+            }
+
+            // 2. Telefon numarası kontrolü
+            string phone = new string(mskPhoneNo.Text.Where(char.IsDigit).ToArray());
+            if (phone.Length < 10) // Türkiye için 10 haneli (5317091246)
+            {
+                MessageBox.Show(
+                    isTurkish ? "Numarayı eksiksiz giriniz." : "Please enter the full phone number.",
+                    isTurkish ? "Uyarı" : "Warning",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                mskPhoneNo.Focus();
+                return;
+            }
+
+            // 3. Kargo ismi kontrolü (Duruma bağlı)
+            if (cmbOrderStatus.SelectedIndex == 3 || cmbOrderStatus.SelectedIndex == 4) // 4. veya 5. seçenek
+            {
+                if (cmbCargo.SelectedIndex == 1) // 2. seçenek = Diğer
+                {
+                    string cargoName = txtCargo.Text.Trim();
+                    if (string.IsNullOrWhiteSpace(cargoName) ||
+                        cargoName == "Diğer Kargo Şirketinin Adını Yazınız" ||
+                        cargoName == "Enter Other Cargo Company Name")
+                    {
+                        MessageBox.Show(
+                            isTurkish ? "Lütfen kargo şirketi adını giriniz." : "Please enter the cargo company name.",
+                            isTurkish ? "Uyarı" : "Warning",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning
+                        );
+                        txtCargo.Focus();
+                        return;
+                    }
+                }
+
+                // 4. Kargo takip numarası kontrolü
+                string tracker = txtCargoTracker.Text.Trim();
+                if (string.IsNullOrWhiteSpace(tracker) ||
+                    tracker == "Kargo Takip Numarasını Yazınız" ||
+                    tracker == "Enter Cargo Tracking Number")
+                {
+                    MessageBox.Show(
+                        isTurkish ? "Lütfen kargo takip numarasını giriniz." : "Please enter the cargo tracking number.",
+                        isTurkish ? "Uyarı" : "Warning",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+                    txtCargoTracker.Focus();
+                    return;
+                }
+            }
+
+            // Onay mesajı göster
+            string confirmMessage = isTurkish
+                ? "Bu siparişi eklemek istediğinize emin misiniz?"
+                : "Are you sure you want to add this order?";
+
+            var result = MessageBox.Show(confirmMessage,
+                isTurkish ? "Onay" : "Confirmation",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes) return;
+
+            var order = new Order
+            {
+                ID = Guid.NewGuid().ToString(),
+                CustomerName = txtCustomerName.Text,
+                CustomerPhone = mskPhoneNo.Text,
+                Cargo = (cmbCargo.SelectedIndex == 0 ? cmbCargo.Text : txtCargo.Text),
+                CargoTrackingNumber = txtCargoTracker.Text,
+                PayableStatues = cmbPayment.SelectedItem?.ToString(),
+                OrderStatues = cmbOrderStatus.SelectedItem?.ToString(),
+                CargoCost = nmrCargo.Value,
+                OrderDate = DateTime.Now,
+                AddedBy = LoggedInUser?.Name
+            };
+
+            // TotalPrice (lwTotal)
+            foreach (ListViewItem item in lwTotal.Items)
+            {
+                string currency = item.SubItems[0].Text;
+                if (decimal.TryParse(item.SubItems[1].Text, out decimal value))
+                    order.TotalPrice[currency] = value;
+            }
+
+            // TotalDiscount (lwDiscList)
+            foreach (ListViewItem item in lwDiscList.Items)
+            {
+                string currency = item.SubItems[0].Text;
+                if (decimal.TryParse(item.SubItems[1].Text, out decimal value))
+                    order.TotalDiscount[currency] = value;
+            }
+
+            // PayableAmount (lwTotal tekrar, indirim sonrası)
+            foreach (ListViewItem item in lwTotal.Items)
+            {
+                string currency = item.SubItems[0].Text;
+                if (decimal.TryParse(item.SubItems[1].Text, out decimal value))
+                    order.PayableAmount[currency] = value;
+            }
+
+            // Vergi (lwTax sadece TL)
+            if (lwTax.Items.Count > 0)
+            {
+                if (decimal.TryParse(lwTax.Items[0].SubItems[1].Text, out decimal tax))
+                    order.Tax = tax;
+            }
+
+            // Vergi oranları
+            order.TaxPercentageVAT = GetSelectedPercentFromCombo(cmbVAT);
+            order.TaxPercentageSCT = GetSelectedPercentFromCombo(cmbSCT);
+
+            // Sipariş detayları (dgwOrderDetails)
+            foreach (DataGridViewRow row in dgwOrderDetails.Rows)
+            {
+                if (row.IsNewRow) continue;
+
+                var detail = new Order.OrderDetail
+                {
+                    ProductName = row.Cells["Name"].Value?.ToString(),
+                    OrderPrice = ParseDecimalFlexible(row.Cells["Price"].Value?.ToString() ?? "0"),
+                    Quantity = Convert.ToInt32(row.Cells["OrderQuantity"].Value ?? 0),
+                    Currency = row.Cells["PriceCurrency"].Value?.ToString(),
+                    Total = ParseDecimalFlexible(row.Cells["Total"].Value?.ToString() ?? "0")
+                };
+
+                order.OrderContent.Add(detail);
+            }
+
+            // Kaydetme işlemi
+            var service = new OrderService();
+            service.AddOrder(order);
+
+            MessageBox.Show(
+                isTurkish ? "Sipariş başarıyla eklendi." : "Order has been added successfully.",
+                isTurkish ? "Bilgi" : "Info",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+
+            // === E-Posta gönderimi (Excel ekli) ===
+            if (!string.IsNullOrWhiteSpace(LoggedInUser?.Email))
+            {
+                var emailService = new EmailService("stockmasterapp@gmail.com", "bfbi cpom gikz azjx");
+
+                emailService.SendOrderWithExcelAttachment(
+                    LoggedInUser.Email,
+                    LoggedInUser.Name,
+                    order.PayableAmount.Values.Sum(),
+                    dgwOrderDetails,
+                    lwDisc,
+                    lwTotal,
+                    lwDiscList,
+                    lwTax,
+                    cmbDisc,
+                    nmrDisc,
+                    cmbSCT,
+                    cmbVAT,
+                    nmrCargo,
+                    txtCustomerName,
+                    mskPhoneNo,
+                    DateTime.Now,
+                    LoggedInUser.Language,
+                    LoggedInUser.Password
+                );
+            }
+
+            // dgwProducts tablosundaki Sipariş Adeti sütunu sıfırlansın
+            foreach (DataGridViewRow row in dgwProducts.Rows)
+            {
+                if (row.Cells["OrderQuantity"] != null)
+                    row.Cells["OrderQuantity"].Value = 0;
+            }
+
+            // dgwOrderDetails içeriğini temizle
+            dgwOrderDetails.Rows.Clear();
+
+            // TextBox ve MaskedTextBox’ları temizle
+            txtCargo.Text = "";
+            txtCargoTracker.Text = "";
+            txtCustomerName.Text = "";
+            mskPhoneNo.Text = "";
+
+            // NumericUpDown’ları sıfırla
+            nmrCargo.Value = 0;
+            nmrDisc.Value = 0;
+
+            // ComboBox’ları ilk seçeneğe getir
+            if (cmbDisc.Items.Count > 0) cmbDisc.SelectedIndex = 0;
+            if (cmbSCT.Items.Count > 0) cmbSCT.SelectedIndex = 0;
+            if (cmbVAT.Items.Count > 0) cmbVAT.SelectedIndex = 0;
+            if (cmbPayment.Items.Count > 0) cmbPayment.SelectedIndex = 0;
+            if (cmbOrderStatus.Items.Count > 0) cmbOrderStatus.SelectedIndex = 0;
+            if (cmbCargo.Items.Count > 0) cmbCargo.SelectedIndex = 0;
+
+            // ListView’leri temizle
+            lwDisc.Items.Clear();
+            lwDiscList.Items.Clear();
+            lwTotal.Items.Clear();
+            lwTax.Items.Clear();
+
+            // Placeholderları geri yükle
+            UpdatePlaceholders();
+        }
+
+        private decimal GetSelectedPercentFromCombo(ComboBox cmb)
+        {
+            if (cmb.SelectedIndex <= 0) return 0;
+
+            string txt = cmb.SelectedItem.ToString();
+            foreach (var part in txt.Split(' '))
+            {
+                if (part.Contains("%") && decimal.TryParse(part.Replace("%", ""), out decimal val))
+                    return val;
+            }
+            return 0;
+        }
     }
+
 }

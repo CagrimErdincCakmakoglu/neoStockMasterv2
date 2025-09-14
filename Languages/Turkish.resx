@@ -400,4 +400,19 @@
   <data name="Para Birimini Kilitle" xml:space="preserve">
     <value>Para Birimini Kilitle</value>
   </data>
+  <data name="Tablo Kontrolleri" xml:space="preserve">
+    <value>Tablo Kontrolleri</value>
+  </data>
+  <data name="Toplam Tutar'ı Genişlet" xml:space="preserve">
+    <value>Toplam Tutar'ı Genişlet</value>
+  </data>
+  <data name="Toplam İndirim'i Genişlet" xml:space="preserve">
+    <value>Toplam İndirim'i Genişlet</value>
+  </data>
+  <data name="VergiyiGenişlet" xml:space="preserve">
+    <value>Vergi’yi Genişlet</value>
+  </data>
+  <data name="Bütün Tabloları Genişlet" xml:space="preserve">
+    <value>Bütün Tabloları Genişlet</value>
+  </data>
 </root>

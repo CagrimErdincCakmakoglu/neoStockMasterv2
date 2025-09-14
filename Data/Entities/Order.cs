@@ -12,9 +12,9 @@ namespace neoStockMasterv2.Data.Entities
         public string CustomerName { get; set; }
         public string CustomerPhone { get; set; }
         public DateTime OrderDate { get; set; }
-        public decimal TotalPrice { get; set; }
-        public decimal TotalDiscount { get; set; }
-        public decimal PayableAmount { get; set; }
+        public Dictionary<string, decimal> TotalPrice { get; set; }
+        public Dictionary<string, decimal> TotalDiscount { get; set; }
+        public Dictionary<string, decimal> PayableAmount { get; set; }
         public decimal Tax { get; set; }
         public decimal TaxPercentageVAT { get; set; }
         public decimal TaxPercentageSCT { get; set; }
@@ -28,7 +28,10 @@ namespace neoStockMasterv2.Data.Entities
 
         public Order()
         {
-            OrderContent = new List<OrderDetail>(); // Listeyi başlatıyoruz
+            OrderContent = new List<OrderDetail>();
+            TotalPrice = new Dictionary<string, decimal>();
+            TotalDiscount = new Dictionary<string, decimal>();
+            PayableAmount = new Dictionary<string, decimal>();
         }
 
         public class OrderDetail
@@ -36,6 +39,8 @@ namespace neoStockMasterv2.Data.Entities
             public string ProductName { get; set; }
             public decimal OrderPrice { get; set; }
             public int Quantity { get; set; }
+            public string Currency { get; set; }
+            public decimal Total { get; set; }
         }
     }
 }

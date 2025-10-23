@@ -102,6 +102,7 @@
             btnViewOrdersEditOrders.TabIndex = 2;
             btnViewOrdersEditOrders.Text = "Siparişleri Görüntüle - Düzenle";
             btnViewOrdersEditOrders.UseVisualStyleBackColor = true;
+            btnViewOrdersEditOrders.Click += btnViewOrdersEditOrders_Click;
             // 
             // btnCalculatePriceAddOrder
             // 

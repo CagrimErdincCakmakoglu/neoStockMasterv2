@@ -158,7 +158,7 @@ namespace neoStockMasterv2.Data.Services
 
             if (userProducts.Count == 0)
             {
-                MessageBox.Show("Bu kullanıcı tarafından eklenmiş ürün bulunamadı.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //MessageBox.Show("Bu kullanıcı tarafından eklenmiş ürün bulunamadı.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             return userProducts;

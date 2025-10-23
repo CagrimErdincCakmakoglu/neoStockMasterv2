@@ -260,5 +260,31 @@ namespace neoStockMasterv2.Forms
         {
             OpenPricingOrderScreen();
         }
+
+        private void OpenOrderViewEditScreen()
+        {
+            string currentLanguage = LanguageService.CurrentLanguage; // Mevcut dili al
+
+            // Formu oluştururken mevcut dili gönder
+            OrderViewEditScreen orderViewEditScreen = new OrderViewEditScreen(currentLanguage);
+            orderViewEditScreen.Owner = this; // MainMenu formunu sahip olarak ayarla
+
+            // Eğer "Her Zaman Üstte" seçiliyse, bu form da öyle olsun
+            orderViewEditScreen.TopMost = chbTop.Checked;
+
+            orderViewEditScreen.FormClosed += (s, e) =>
+            {
+                // Form kapandığında da kontrol et, üstte kalma özelliğini koru
+                ToggleAlwaysOnTop();
+            };
+
+            // Modal şekilde aç
+            orderViewEditScreen.ShowDialog();
+        }
+
+        private void btnViewOrdersEditOrders_Click(object sender, EventArgs e)
+        {
+            OpenOrderViewEditScreen();
+        }
     }
 }

@@ -386,7 +386,7 @@
             // pbScale
             // 
             pbScale.Image = (Image)resources.GetObject("pbScale.Image");
-            pbScale.Location = new Point(503, 489);
+            pbScale.Location = new Point(480, 489);
             pbScale.Name = "pbScale";
             pbScale.Size = new Size(27, 21);
             pbScale.SizeMode = PictureBoxSizeMode.StretchImage;

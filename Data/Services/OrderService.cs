@@ -53,6 +53,15 @@ namespace neoStockMasterv2.Data.Services
             var order = _orders.FirstOrDefault(o => o.ID == orderId);
             if (order != null)
             {
+                // --- Stok İade İşlemi ---
+                ProductService productService = new ProductService();
+
+                foreach (var item in order.OrderContent)
+                {
+                    // Her ürün için stok miktarını artır
+                    productService.AddStockToProduct(item.ProductName, item.Quantity);
+                }
+
                 _orders.Remove(order);
                 SaveOrders();
                 return true;
@@ -101,12 +110,15 @@ namespace neoStockMasterv2.Data.Services
             if (LoggedInUser == null)
             {
                 MessageBox.Show("Lütfen giriş yapınız.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return new List<Order>(); // Kullanıcı giriş yapmamışsa boş liste döndür
+                return new List<Order>();
             }
 
             var orders = _orders;
 
-            var userOrders = orders.Where(p => p.AddedBy.Equals(LoggedInUser.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+            // 🔹 'AddedBy' username ile eşleşiyor
+            var userOrders = orders
+                .Where(p => p.AddedBy.Equals(LoggedInUser.Name, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             return userOrders;
         }

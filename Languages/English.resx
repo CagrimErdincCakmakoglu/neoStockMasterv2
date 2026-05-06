@@ -415,4 +415,19 @@
   <data name="Bütün Tabloları Genişlet" xml:space="preserve">
     <value>Expand All Tables</value>
   </data>
+  <data name="Siparişler" xml:space="preserve">
+    <value>Orders</value>
+  </data>
+  <data name="Görüntüle" xml:space="preserve">
+    <value>Read Only</value>
+  </data>
+  <data name="Kargo Bedeli" xml:space="preserve">
+    <value>Shipping Cost</value>
+  </data>
+  <data name="Fiyat Kilidi" xml:space="preserve">
+    <value>Price Lock</value>
+  </data>
+  <data name="Banka Tercihi" xml:space="preserve">
+    <value>Bank Preference</value>
+  </data>
 </root>

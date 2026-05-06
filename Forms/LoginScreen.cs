@@ -82,6 +82,7 @@ namespace neoStockMasterv2
 
             if (loginResult.StartsWith("Giriş başarılı!"))
             {
+
                 // Başarılı giriş
                 MessageBox.Show(loginResult, "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -92,12 +93,13 @@ namespace neoStockMasterv2
                 EditProductScreen.LoggedInUser = loggedInUser;
                 ProductService.LoggedInUser = loggedInUser;
                 PricingOrderScreen.LoggedInUser = loggedInUser;
+                OrderViewEditScreen.LoggedInUser = loggedInUser;
                 //CalculatePriceAddOrderScreen.LoggedInUser = loggedInUser;
                 UserInfoScreen.LoggedInUser = loggedInUser;
                 //UserService.LoggedInUser = loggedInUser;
                 //ViewOrdersEditingScreen.LoggedInUser = loggedInUser;
                 //OrderService.LoggedInUser = loggedInUser;
-                //ZReportForm.LoggedInUser = loggedInUser;
+                ZReportScreen.LoggedInUser = loggedInUser;
 
                 MainMenu mainMenu = new MainMenu(loggedInUser);
                 mainMenu.Show();

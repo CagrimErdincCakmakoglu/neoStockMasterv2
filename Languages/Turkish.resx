@@ -415,4 +415,19 @@
   <data name="Bütün Tabloları Genişlet" xml:space="preserve">
     <value>Bütün Tabloları Genişlet</value>
   </data>
+  <data name="Siparişler" xml:space="preserve">
+    <value>Siparişler</value>
+  </data>
+  <data name="Görüntüle" xml:space="preserve">
+    <value>Görüntüle</value>
+  </data>
+  <data name="Kargo Bedeli" xml:space="preserve">
+    <value>Kargo Bedeli</value>
+  </data>
+  <data name="Fiyat Kilidi" xml:space="preserve">
+    <value>Fiyat Kilidi</value>
+  </data>
+  <data name="Banka Tercihi" xml:space="preserve">
+    <value>Banka Tercihi</value>
+  </data>
 </root>

@@ -95,7 +95,7 @@
             menuStripLanguage.Items.AddRange(new ToolStripItem[] { türkçeToolStripMenuItem, englishToolStripMenuItem });
             menuStripLanguage.Location = new Point(0, 0);
             menuStripLanguage.Name = "menuStripLanguage";
-            menuStripLanguage.Size = new Size(968, 24);
+            menuStripLanguage.Size = new Size(966, 24);
             menuStripLanguage.TabIndex = 0;
             menuStripLanguage.Text = "menuStripLanguage";
             // 
@@ -565,7 +565,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(968, 685);
+            ClientSize = new Size(966, 685);
             Controls.Add(grbTable);
             Controls.Add(pbScale);
             Controls.Add(grbOrderDetails);
@@ -574,8 +574,9 @@
             Controls.Add(menuStripLanguage);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStripLanguage;
+            MaximizeBox = false;
             Name = "PricingOrderScreen";
-            Text = "Fiyat Hesaplama - Sipariş Oluşturma";
+            Text = "+";
             Load += PricingOrderScreen_Load;
             menuStripLanguage.ResumeLayout(false);
             menuStripLanguage.PerformLayout();

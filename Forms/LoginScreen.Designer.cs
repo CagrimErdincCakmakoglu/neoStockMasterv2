@@ -192,7 +192,6 @@
             Controls.Add(lblUsername);
             Controls.Add(lblCoder);
             FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
             Name = "LoginScreen";
             Text = "LoginScreen";
             FormClosing += LoginScreen_FormClosing;

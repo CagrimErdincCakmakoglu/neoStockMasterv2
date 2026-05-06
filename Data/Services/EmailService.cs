@@ -18,13 +18,14 @@ namespace neoStockMasterv2.Data.Services
         private readonly string smtpClientAddress = "smtp.gmail.com";
         private readonly int smtpPort = 587;
         private readonly string senderEmail = "stockmasterapp@gmail.com";
-        private readonly string senderPassword = "bfbi cpom gikz azjx";
+        private readonly string senderPassword = "shhu hvks hkfe aoec";
 
         public EmailService(string email, string password)
         {
             senderEmail = email;
             senderPassword = password;
             _orderService = new OrderService();
+            _userService = new UserService();
         }
 
         public void SendWelcomeEmail(string recipientEmail, string recipientName, string verificationCode)

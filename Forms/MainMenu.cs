@@ -286,5 +286,30 @@ namespace neoStockMasterv2.Forms
         {
             OpenOrderViewEditScreen();
         }
+
+        private void OpenZReportScreen()
+        {
+            string currentLanguage = LanguageService.CurrentLanguage; // Mevcut dili al
+
+            // Formu oluştururken mevcut dili gönder
+            ZReportScreen zReportScreen = new ZReportScreen(currentLanguage);
+            zReportScreen.Owner = this; // MainMenu formunu sahip olarak ayarla
+
+            // Eğer "Her Zaman Üstte" seçiliyse, bu form da öyle olsun
+            zReportScreen.TopMost = chbTop.Checked;
+
+            zReportScreen.FormClosed += (s, e) =>
+            {
+                // Form kapandığında da kontrol et, üstte kalma özelliğini koru
+                ToggleAlwaysOnTop();
+            };
+
+            zReportScreen.ShowDialog();
+        }
+
+        private void btnZReport_Click(object sender, EventArgs e)
+        {
+            OpenZReportScreen();
+        }
     }
 }

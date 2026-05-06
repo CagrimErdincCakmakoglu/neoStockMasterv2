@@ -18,6 +18,8 @@ namespace neoStockMasterv2.Data.Entities
         public decimal Tax { get; set; }
         public decimal TaxPercentageVAT { get; set; }
         public decimal TaxPercentageSCT { get; set; }
+        public decimal DiscountPercentage { get; set; }  
+        public decimal ExtraDiscountAmount { get; set; }
         public List<OrderDetail> OrderContent { get; set; }
         public string PayableStatues { get; set; }
         public string OrderStatues { get; set; }

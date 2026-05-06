@@ -93,6 +93,7 @@
             btnZReport.TabIndex = 3;
             btnZReport.Text = "Z Raporu";
             btnZReport.UseVisualStyleBackColor = true;
+            btnZReport.Click += btnZReport_Click;
             // 
             // btnViewOrdersEditOrders
             // 

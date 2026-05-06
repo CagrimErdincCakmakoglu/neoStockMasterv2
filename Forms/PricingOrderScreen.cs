@@ -59,6 +59,7 @@ namespace neoStockMasterv2.Forms
             cmbVAT.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
 
             this.Height = 555; // Form başlangıç yüksekliği grbCustomerMsg daraltılmış geldiği için
+            this.Width = 990;
         }
 
         private void PricingOrderScreen_Load(object sender, EventArgs e)
@@ -96,6 +97,9 @@ namespace neoStockMasterv2.Forms
 
             InitializeHoverTooltips(); // Form üzerindeki bütün lw'lere tooltip ekle
             MakeRichTextBoxUnselectable(rchMessage);
+
+            txtCargo.Enabled = false;
+            cmbCargo.Enabled = false;
         }
 
         private void LanguageService_LanguageChanged()
@@ -108,6 +112,9 @@ namespace neoStockMasterv2.Forms
             LoadUserProducts();
             InitializeLwDisc();
             UpdateMessage();
+
+            txtCargo.Enabled = false;
+            cmbCargo.Enabled = false;
         }
 
         private void UpdateFormTexts()
@@ -134,6 +141,7 @@ namespace neoStockMasterv2.Forms
             btnDisc.Text = LanguageService.GetString("Toplam İndirim'i Genişlet");
             btnTax.Text = LanguageService.GetString("VergiyiGenişlet");
             btnAll.Text = LanguageService.GetString("Bütün Tabloları Genişlet");
+            grbCargo.Text = LanguageService.GetString("Kargo Bedeli");
 
             this.Text = LanguageService.GetString("Fiyat Hesaplama - Sipariş Oluşturma");
 
@@ -271,10 +279,14 @@ namespace neoStockMasterv2.Forms
             cmbCargo.SelectedIndexChanged -= cmbCargo_SelectedIndexChanged; // Çift bağlanmayı önlemek için
             cmbCargo.SelectedIndexChanged += cmbCargo_SelectedIndexChanged;
 
+            cmbCargo.Items.Clear();
+
             if (string.IsNullOrWhiteSpace(LoggedInUser.Cargo))
             {
+                // Sadece "Diğer" varsa dropdown devre dışı olsun, textbox aktif
                 cmbCargo.Items.Add(isTurkish ? "Diğer" : "Other");
                 cmbCargo.SelectedIndex = 0;
+                cmbCargo.Enabled = false;
                 txtCargo.Enabled = true;
             }
             else
@@ -282,6 +294,7 @@ namespace neoStockMasterv2.Forms
                 cmbCargo.Items.Add(LoggedInUser.Cargo);
                 cmbCargo.Items.Add(isTurkish ? "Diğer" : "Other");
                 cmbCargo.SelectedIndex = 0;
+                cmbCargo.Enabled = true;
                 txtCargo.Enabled = false;
             }
 
@@ -470,20 +483,29 @@ namespace neoStockMasterv2.Forms
             }
             else if (statusIndex == 3 || statusIndex == 4) // 4 ve 5. seçenekler
             {
-                cmbCargo.Enabled = true;
+                // Ortak erişimler
                 txtCargoTracker.Enabled = true;
                 txtCustomerName.Enabled = true;
                 mskPhoneNo.Enabled = true;
                 btnAddOrder.Enabled = true;
 
-                // cmbCargo 2. seçenek seçili ise txtCargo enable true, değilse false
-                if (cmbCargo.SelectedIndex == 1) // 2. seçenek (index 1)
+                // İstenen kural:
+                // - cmbCargo iki seçenek değilse (yani Items.Count != 2) -> cmbCargo erişimi kapalı, txtCargo açık
+                // - cmbCargo iki seçenek ise -> cmbCargo açık olsun, txtCargo sadece "Diğer" seçilmişse açık olsun
+                if (cmbCargo.Items.Count != 2)
                 {
+                    cmbCargo.Enabled = false;
                     txtCargo.Enabled = true;
                 }
                 else
                 {
-                    txtCargo.Enabled = false;
+                    cmbCargo.Enabled = true;
+
+                    // Güvenli kontrol: SelectedIndex -1 olabilir, o yüzden önce -1 değilse kontrol et
+                    if (cmbCargo.SelectedIndex >= 0)
+                        txtCargo.Enabled = (cmbCargo.SelectedIndex == 1); // 2. seçenek ise txtCargo açık
+                    else
+                        txtCargo.Enabled = false;
                 }
             }
         }
@@ -2217,18 +2239,64 @@ namespace neoStockMasterv2.Forms
 
             if (result != DialogResult.Yes) return;
 
+            // Önce indirim yüzdesini hesapla
+            decimal discountPercent = 0m;
+            if (cmbDisc.SelectedItem != null)
+            {
+                string selected = cmbDisc.SelectedItem.ToString().Trim();
+
+                if (isTurkish && selected.StartsWith("%"))
+                {
+                    string numberPart = selected.Split(' ')[0].Replace("%", "");
+                    decimal.TryParse(numberPart, out discountPercent);
+                }
+                else
+                {
+                    foreach (var part in selected.Split(' '))
+                    {
+                        if (part.Contains("%"))
+                        {
+                            string numberPart = part.Replace("%", "");
+                            decimal.TryParse(numberPart, out discountPercent);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // --- DOĞRU KARGO SEÇİMİ ---
+            string selectedCargo = "";
+
+            if (string.IsNullOrWhiteSpace(LoggedInUser.Cargo))
+            {
+                // Kullanıcının kayıtlı kargo bilgisi yok → her zaman txtCargo
+                selectedCargo = txtCargo.Text.Trim();
+            }
+            else
+            {
+                // Kullanıcının kayıtlı kargo bilgisi var → combobox kontrol edilecek
+                if (cmbCargo.SelectedIndex == 0)
+                    selectedCargo = LoggedInUser.Cargo;   // 1. seçenek → kayıtlı kargo
+                else if (cmbCargo.SelectedIndex == 1)
+                    selectedCargo = txtCargo.Text.Trim(); // 2. seçenek → txtCargo
+            }
+
             var order = new Order
             {
                 ID = Guid.NewGuid().ToString(),
                 CustomerName = txtCustomerName.Text,
                 CustomerPhone = mskPhoneNo.Text,
-                Cargo = (cmbCargo.SelectedIndex == 0 ? cmbCargo.Text : txtCargo.Text),
+                Cargo = selectedCargo,
                 CargoTrackingNumber = txtCargoTracker.Text,
                 PayableStatues = cmbPayment.SelectedItem?.ToString(),
                 OrderStatues = cmbOrderStatus.SelectedItem?.ToString(),
                 CargoCost = nmrCargo.Value,
                 OrderDate = DateTime.Now,
-                AddedBy = LoggedInUser?.Name
+                AddedBy = LoggedInUser?.Name,
+
+                // 🔽 İndirim alanları
+                DiscountPercentage = discountPercent,
+                ExtraDiscountAmount = nmrDisc.Value
             };
 
             // TotalPrice (lwTotal)
@@ -2297,7 +2365,7 @@ namespace neoStockMasterv2.Forms
             // === E-Posta gönderimi (Excel ekli) ===
             if (!string.IsNullOrWhiteSpace(LoggedInUser?.Email))
             {
-                var emailService = new EmailService("stockmasterapp@gmail.com", "bfbi cpom gikz azjx");
+                var emailService = new EmailService("stockmasterapp@gmail.com", "shhu hvks hkfe aoec");
 
                 emailService.SendOrderWithExcelAttachment(
                     LoggedInUser.Email,
@@ -2371,6 +2439,8 @@ namespace neoStockMasterv2.Forms
             }
             return 0;
         }
+
+
     }
 
 }

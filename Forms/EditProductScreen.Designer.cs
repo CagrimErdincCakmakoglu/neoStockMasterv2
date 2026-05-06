@@ -566,6 +566,7 @@
             Controls.Add(menuStripLanguage);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStripLanguage;
+            MaximizeBox = false;
             Name = "EditProductScreen";
             Load += EditProductScreen_Load;
             menuStripLanguage.ResumeLayout(false);

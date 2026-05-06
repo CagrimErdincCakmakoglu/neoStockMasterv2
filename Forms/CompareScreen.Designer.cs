@@ -169,6 +169,7 @@
             Controls.Add(menuStripLanguage);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStripLanguage;
+            MaximizeBox = false;
             Name = "CompareScreen";
             Text = "CompareScreen";
             Load += CompareScreen_Load;

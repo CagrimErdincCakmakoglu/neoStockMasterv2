@@ -1,4 +1,4 @@
-﻿using neoStockMasterv2.Data.Entities;
+using neoStockMasterv2.Data.Entities;
 using neoStockMasterv2.Data.Services;
 using neoStockMasterv2.Data.Services.BankServices;
 using neoStockMasterv2.Languages;
@@ -607,7 +607,7 @@ namespace neoStockMasterv2.Forms
             var headerStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.FromArgb(245, 245, 245),   // Çok açık gri (neredeyse beyaz)
-                ForeColor = Color.FromArgb(50, 50, 50),     // Koyu gri (siyah değil)
+                ForeColor = Color.FromArgb(50, 50, 50),      // Koyu gri (siyah değil)
                 Font = new Font("Segoe UI", 9, FontStyle.Regular),
                 Alignment = DataGridViewContentAlignment.MiddleCenter,
                 WrapMode = DataGridViewTriState.False
@@ -1687,7 +1687,7 @@ namespace neoStockMasterv2.Forms
             }
             else
             {
-                btnWhatsapp.Tag = "store"; // WhatsApp Microsoft Store
+                btnWhatsapp.Tag = "store";  // WhatsApp Microsoft Store
                 btnWhatsapp.Enabled = true; // Yine de buton aktif
             }
         }
@@ -1960,7 +1960,6 @@ namespace neoStockMasterv2.Forms
             }
 
             // Pencereyi aç (sol = indirim toplamları, sağ = indirim detayları)
-            //var detailForm = new TotalTreeViewForm(lwDiscList, lwDisc);
             var detailForm = new TotalTreeViewForm(lwDiscList, lwDisc, true);
 
 
@@ -2094,7 +2093,7 @@ namespace neoStockMasterv2.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing // ✅ Başlık yüksekliği sabit
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing // Başlık yüksekliği sabit
             };
 
             foreach (DataGridViewColumn col in original.Columns)
@@ -2294,7 +2293,7 @@ namespace neoStockMasterv2.Forms
                 OrderDate = DateTime.Now,
                 AddedBy = LoggedInUser?.Name,
 
-                // 🔽 İndirim alanları
+                // İndirim alanları
                 DiscountPercentage = discountPercent,
                 ExtraDiscountAmount = nmrDisc.Value
             };

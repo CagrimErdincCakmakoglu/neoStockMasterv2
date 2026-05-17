@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(OrderViewEditScreen));
             menuStripLanguage = new MenuStrip();
             türkçeToolStripMenuItem = new ToolStripMenuItem();
             englishToolStripMenuItem = new ToolStripMenuItem();
@@ -61,6 +62,7 @@
             cmbOrderStatus = new ComboBox();
             cmbPayment = new ComboBox();
             grbPriceDetails = new GroupBox();
+            pbInfo = new PictureBox();
             chbPriceLock = new CheckBox();
             dtpOrder = new DateTimePicker();
             btnVer = new Button();
@@ -74,7 +76,8 @@
             grbDisc.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nmrDisc).BeginInit();
             grbPriceDetails.SuspendLayout();
-            SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pbInfo).BeginInit();
+            //SuspendLayout();
             // 
             // menuStripLanguage
             // 
@@ -90,7 +93,7 @@
             // 
             türkçeToolStripMenuItem.Image = Languages.Turkish.TurkFlag;
             türkçeToolStripMenuItem.Name = "türkçeToolStripMenuItem";
-            türkçeToolStripMenuItem.Size = new Size(70, 20);
+            türkçeToolStripMenuItem.Size = new Size(71, 20);
             türkçeToolStripMenuItem.Text = "Türkçe";
             türkçeToolStripMenuItem.Click += türkçeToolStripMenuItem_Click;
             // 
@@ -194,6 +197,9 @@
             lwDisc.Size = new Size(685, 94);
             lwDisc.TabIndex = 11;
             lwDisc.UseCompatibleStateImageBehavior = false;
+            lwDisc.ItemCheck += lwDisc_ItemCheck;
+            lwDisc.ItemChecked += lwDisc_ItemChecked;
+            lwDisc.MouseClick += lwDisc_MouseClick;
             // 
             // lwTax
             // 
@@ -306,7 +312,7 @@
             lblTotalPrice.AutoSize = true;
             lblTotalPrice.Location = new Point(96, 441);
             lblTotalPrice.Name = "lblTotalPrice";
-            lblTotalPrice.Size = new Size(76, 15);
+            lblTotalPrice.Size = new Size(78, 15);
             lblTotalPrice.TabIndex = 22;
             lblTotalPrice.Text = "Toplam Tutar";
             // 
@@ -324,7 +330,7 @@
             lblTotalDisc.AutoSize = true;
             lblTotalDisc.Location = new Point(329, 441);
             lblTotalDisc.Name = "lblTotalDisc";
-            lblTotalDisc.Size = new Size(87, 15);
+            lblTotalDisc.Size = new Size(88, 15);
             lblTotalDisc.TabIndex = 23;
             lblTotalDisc.Text = "Toplam İndirim";
             // 
@@ -392,6 +398,7 @@
             // 
             // grbPriceDetails
             // 
+            grbPriceDetails.Controls.Add(pbInfo);
             grbPriceDetails.Controls.Add(chbPriceLock);
             grbPriceDetails.Controls.Add(dgwProducts);
             grbPriceDetails.Location = new Point(12, 90);
@@ -401,9 +408,21 @@
             grbPriceDetails.TabStop = false;
             grbPriceDetails.Text = "Fiyat Detayları";
             // 
+            // pbInfo
+            // 
+            pbInfo.Image = (Image)resources.GetObject("pbInfo.Image");
+            pbInfo.Location = new Point(244, -6);
+            pbInfo.Name = "pbInfo";
+            pbInfo.Size = new Size(25, 23);
+            pbInfo.SizeMode = PictureBoxSizeMode.StretchImage;
+            pbInfo.TabIndex = 36;
+            pbInfo.TabStop = false;
+            // 
             // chbPriceLock
             // 
             chbPriceLock.AutoSize = true;
+            chbPriceLock.Checked = true;
+            chbPriceLock.CheckState = CheckState.Checked;
             chbPriceLock.Location = new Point(168, 0);
             chbPriceLock.Name = "chbPriceLock";
             chbPriceLock.Size = new Size(80, 19);
@@ -476,6 +495,7 @@
             ((System.ComponentModel.ISupportInitialize)nmrDisc).EndInit();
             grbPriceDetails.ResumeLayout(false);
             grbPriceDetails.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pbInfo).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -518,5 +538,6 @@
         private DateTimePicker dtpOrder;
         private Button btnVer;
         private CheckBox chbPriceLock;
+        private PictureBox pbInfo;
     }
 }

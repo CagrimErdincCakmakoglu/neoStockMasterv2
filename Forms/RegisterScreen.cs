@@ -52,6 +52,8 @@ namespace neoStockMasterv2.Forms
             btnVerificationClear.Text = LanguageService.GetString("Temizle");
             btnVerificationConfirm.Text = LanguageService.GetString("Onayla");
             lblVerificationName.Text = LanguageService.GetString("İsim");
+            llContract.Text = LanguageService.GetString("Kullanıcı Sözleşmesini okudum, kabul ediyorum.");
+            LanguageService.GetString("UserAgreementText");
 
             this.Text = LanguageService.GetString("Kayıt Ekranı");
         }
@@ -61,6 +63,7 @@ namespace neoStockMasterv2.Forms
             txtUsername.Clear();
             txtPassword.Clear();
             txtMail.Clear();
+            chbContract.Checked = false;
         }
 
         private void cmbLanguage_SelectedIndexChanged(object sender, EventArgs e)
@@ -78,6 +81,31 @@ namespace neoStockMasterv2.Forms
 
         private void btnRegister_Click(object sender, EventArgs e)
         {
+            if (!chbContract.Checked)
+            {
+                // Dil servisinden anahtarları çekmeye çalışıyoruz
+                string rawMsg = LanguageService.GetString("SözleşmeOnayUyarısı");
+                string rawTitle = LanguageService.GetString("SözleşmeOnayBaşlığı");
+
+                string warningMsg;
+                string warningTitle;
+
+                // Mevcut seçili dile göre kurumsal mesajları ve başlıkları belirliyoruz
+                if (cmbLanguage.Text == "English")
+                {
+                    warningMsg = !string.IsNullOrEmpty(rawMsg) ? rawMsg : "You must read and accept the End-User License Agreement (EULA) to proceed with registration.";
+                    warningTitle = !string.IsNullOrEmpty(rawTitle) ? rawTitle : "Action Required";
+                }
+                else // Varsayılan veya Türkçe seçeneği
+                {
+                    warningMsg = !string.IsNullOrEmpty(rawMsg) ? rawMsg : "Devam edebilmek için Kullanıcı Sözleşmesi ve Hizmet Şartları'nı okuyup onaylamanız gerekmektedir.";
+                    warningTitle = !string.IsNullOrEmpty(rawTitle) ? rawTitle : "Sözleşme Onayı Gerekli";
+                }
+
+                MessageBox.Show(warningMsg, warningTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             // Kullanıcıdan alınan bilgiler
             string name = txtUsername.Text.Trim();
             string password = txtPassword.Text.Trim();
@@ -105,7 +133,7 @@ namespace neoStockMasterv2.Forms
             if (string.IsNullOrWhiteSpace(email))
             {
                 MessageBox.Show("Mail adresi boş bırakılamaz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return; 
+                return;
             }
 
             try
@@ -183,6 +211,97 @@ namespace neoStockMasterv2.Forms
         private void btnVerificationConfirm_Click(object sender, EventArgs e)
         {
             VerifyAccountForUser();
+        }
+
+        private void llContract_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            // Dil servisinden veriyi çekiyoruz
+            bool isEnglish = cmbLanguage.Text == "English";
+
+            string rawTitle = isEnglish
+                ? LanguageService.GetString("UserAgreement")   // dil dosyasında "User Agreement" değeri
+                : LanguageService.GetString("Kullanıcı Sözleşmesi");
+
+            string rawText = LanguageService.GetString("UserAgreementText");
+
+            string agreementTitle = !string.IsNullOrEmpty(rawTitle)
+                ? rawTitle
+                : (isEnglish ? "User Agreement" : "Kullanıcı Sözleşmesi");
+
+            string agreementText = !string.IsNullOrEmpty(rawText)
+                ? rawText
+                : "Sözleşme metni yüklenemedi. Lütfen sistem yöneticisi ile iletişime geçin.";
+            // 1. Ana Formun Modernize Edilmesi
+            Form agreementForm = new Form();
+            agreementForm.Text = agreementTitle;
+            agreementForm.Size = new Size(550, 500);
+            agreementForm.StartPosition = FormStartPosition.CenterParent;
+            agreementForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+            agreementForm.MaximizeBox = false;
+            agreementForm.MinimizeBox = false;
+            agreementForm.BackColor = Color.FromArgb(245, 247, 250); // Açık modern gri/mavi arka plan
+
+            // 2. Üst Banner (Header) Alanı
+            Panel pnlHeader = new Panel();
+            pnlHeader.Height = 60;
+            pnlHeader.Dock = DockStyle.Top;
+            pnlHeader.BackColor = Color.FromArgb(41, 56, 78); // Kurumsal Koyu Lacivert/Griton
+            pnlHeader.Padding = new Padding(20, 0, 0, 0);
+
+            Label lblHeaderTitle = new Label();
+            lblHeaderTitle.Text = agreementTitle.ToUpper();
+            lblHeaderTitle.ForeColor = Color.White;
+            lblHeaderTitle.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            lblHeaderTitle.AutoSize = false;
+            lblHeaderTitle.Dock = DockStyle.Fill;
+            lblHeaderTitle.TextAlign = ContentAlignment.MiddleLeft;
+            pnlHeader.Controls.Add(lblHeaderTitle);
+
+            // 3. Alt Buton Alanı (Footer)
+            Panel pnlFooter = new Panel();
+            pnlFooter.Height = 60;
+            pnlFooter.Dock = DockStyle.Bottom;
+            pnlFooter.BackColor = Color.FromArgb(235, 238, 243);
+
+            Button btnClose = new Button();
+            btnClose.Text = LanguageService.GetString("Anladım, Kapat"); // Veya "Kapat"
+            btnClose.Size = new Size(130, 36);
+            btnClose.Location = new Point(agreementForm.Width - 160, 12);
+            btnClose.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnClose.ForeColor = Color.White;
+            btnClose.BackColor = Color.FromArgb(0, 122, 255); // Modern iOS/Windows Mavisi
+            btnClose.FlatStyle = FlatStyle.Flat;
+            btnClose.FlatAppearance.BorderSize = 0; // Kenarlıkları kaldırarak flat görünüm sağladık
+            btnClose.Cursor = Cursors.Hand;
+            btnClose.DialogResult = DialogResult.OK; // Tıklanınca formu kapatması için
+            pnlFooter.Controls.Add(btnClose);
+
+            // 4. Metin Alanı İçin İç Panel (Padding/Boşluk Amacıyla)
+            Panel pnlContent = new Panel();
+            pnlContent.Dock = DockStyle.Fill;
+            pnlContent.Padding = new Padding(20, 20, 20, 20); // Metnin kenarlara yapışmasını engeller
+
+            // RichTextBox kullanarak daha temiz bir metin görünümü ve modern kenarlıklar elde ediyoruz
+            RichTextBox rtbAgreement = new RichTextBox();
+            rtbAgreement.ReadOnly = true;
+            rtbAgreement.Dock = DockStyle.Fill;
+            rtbAgreement.Text = agreementText;
+            rtbAgreement.Font = new Font("Segoe UI", 10f, FontStyle.Regular);
+            rtbAgreement.ForeColor = Color.FromArgb(45, 55, 72); // Koyu gri metin rengi (Gözü yormaz)
+            rtbAgreement.BackColor = Color.White;
+            rtbAgreement.BorderStyle = BorderStyle.None; // Çirkin 3D kenarlıkları kaldırıyoruz
+            rtbAgreement.ScrollBars = RichTextBoxScrollBars.Vertical;
+
+            // Metin paneline RichTextBox'ı ekliyoruz
+            pnlContent.Controls.Add(rtbAgreement);
+
+            // 5. Kontrolleri Forma Sırasıyla Ekleme
+            agreementForm.Controls.Add(pnlContent);
+            agreementForm.Controls.Add(pnlHeader);
+            agreementForm.Controls.Add(pnlFooter);
+
+            // Formu göster
+            agreementForm.ShowDialog();
         }
     }
 }

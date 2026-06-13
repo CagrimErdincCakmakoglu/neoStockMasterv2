@@ -46,6 +46,8 @@
             txtVerificationName = new TextBox();
             lblVerificationCode = new Label();
             lblVerificationName = new Label();
+            chbContract = new CheckBox();
+            llContract = new LinkLabel();
             grbUserInfo.SuspendLayout();
             grbVerification.SuspendLayout();
             SuspendLayout();
@@ -137,7 +139,7 @@
             // 
             // btnClear
             // 
-            btnClear.Location = new Point(107, 162);
+            btnClear.Location = new Point(107, 185);
             btnClear.Name = "btnClear";
             btnClear.Size = new Size(75, 23);
             btnClear.TabIndex = 1;
@@ -147,7 +149,7 @@
             // 
             // btnRegister
             // 
-            btnRegister.Location = new Point(188, 162);
+            btnRegister.Location = new Point(188, 185);
             btnRegister.Name = "btnRegister";
             btnRegister.Size = new Size(75, 23);
             btnRegister.TabIndex = 2;
@@ -163,7 +165,7 @@
             grbVerification.Controls.Add(txtVerificationName);
             grbVerification.Controls.Add(lblVerificationCode);
             grbVerification.Controls.Add(lblVerificationName);
-            grbVerification.Location = new Point(12, 191);
+            grbVerification.Location = new Point(12, 214);
             grbVerification.Name = "grbVerification";
             grbVerification.Size = new Size(288, 114);
             grbVerification.TabIndex = 3;
@@ -222,11 +224,33 @@
             lblVerificationName.TabIndex = 0;
             lblVerificationName.Text = "İsim";
             // 
+            // chbContract
+            // 
+            chbContract.AutoSize = true;
+            chbContract.Location = new Point(20, 162);
+            chbContract.Name = "chbContract";
+            chbContract.Size = new Size(15, 14);
+            chbContract.TabIndex = 6;
+            chbContract.UseVisualStyleBackColor = true;
+            // 
+            // llContract
+            // 
+            llContract.AutoSize = true;
+            llContract.Location = new Point(37, 161);
+            llContract.Name = "llContract";
+            llContract.Size = new Size(262, 15);
+            llContract.TabIndex = 7;
+            llContract.TabStop = true;
+            llContract.Text = "Kullanıcı Sözleşmesini okudum, kabul ediyorum.";
+            llContract.LinkClicked += llContract_LinkClicked;
+            // 
             // RegisterScreen
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(310, 314);
+            ClientSize = new Size(310, 340);
+            Controls.Add(llContract);
+            Controls.Add(chbContract);
             Controls.Add(grbVerification);
             Controls.Add(btnRegister);
             Controls.Add(btnClear);
@@ -241,6 +265,7 @@
             grbVerification.ResumeLayout(false);
             grbVerification.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -263,5 +288,7 @@
         private TextBox txtVerificationName;
         private Label lblVerificationCode;
         private Label lblVerificationName;
+        private CheckBox chbContract;
+        private LinkLabel llContract;
     }
 }

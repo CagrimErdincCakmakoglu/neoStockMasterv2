@@ -19,7 +19,7 @@ namespace neoStockMasterv2.Languages {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class English {
@@ -79,6 +79,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Got It, Close.
+        /// </summary>
+        internal static string Anladım__Kapat {
+            get {
+                return ResourceManager.GetString("Anladım, Kapat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Contracted Shipping Company.
         /// </summary>
         internal static string Anlaşmalı_Kargo_Şirketi {
@@ -111,6 +120,24 @@ namespace neoStockMasterv2.Languages {
         internal static string Birim_Miktarı {
             get {
                 return ResourceManager.GetString("Birim Miktarı", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Completed.
+        /// </summary>
+        internal static string Bitti {
+            get {
+                return ResourceManager.GetString("Bitti", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gross Revenue.
+        /// </summary>
+        internal static string Brüt_Kazanç {
+            get {
+                return ResourceManager.GetString("Brüt Kazanç", resourceCulture);
             }
         }
         
@@ -287,6 +314,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Price Analysis.
+        /// </summary>
+        internal static string Fiyat_Analizi {
+            get {
+                return ResourceManager.GetString("Fiyat Analizi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Pricing Details.
         /// </summary>
         internal static string Fiyat_Detayları {
@@ -368,6 +404,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to In Preparation.
+        /// </summary>
+        internal static string Hazırlanıyor {
+            get {
+                return ResourceManager.GetString("Hazırlanıyor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ID Remember.
         /// </summary>
         internal static string ID_Hatırla {
@@ -422,6 +467,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Business Data.
+        /// </summary>
+        internal static string İşletme_Verileri {
+            get {
+                return ResourceManager.GetString("İşletme Verileri", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Remaining Days.
         /// </summary>
         internal static string Kalan_Gün_Sayısı {
@@ -454,6 +508,33 @@ namespace neoStockMasterv2.Languages {
         internal static string Kargo_Bedeli {
             get {
                 return ResourceManager.GetString("Kargo Bedeli", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shipping Company.
+        /// </summary>
+        internal static string Kargo_Firması {
+            get {
+                return ResourceManager.GetString("Kargo Firması", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shipped.
+        /// </summary>
+        internal static string Kargolandı {
+            get {
+                return ResourceManager.GetString("Kargolandı", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to To Be Shipped.
+        /// </summary>
+        internal static string Kargoya_Verilecek {
+            get {
+                return ResourceManager.GetString("Kargoya Verilecek", resourceCulture);
             }
         }
         
@@ -499,6 +580,15 @@ namespace neoStockMasterv2.Languages {
         internal static string Kayıtlı_Gün_Sayısı {
             get {
                 return ResourceManager.GetString("Kayıtlı Gün Sayısı", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to VAT/SCT.
+        /// </summary>
+        internal static string KDV_ÖTV {
+            get {
+                return ResourceManager.GetString("KDV/ÖTV", resourceCulture);
             }
         }
         
@@ -584,6 +674,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to I have read and accept the User Agreement..
+        /// </summary>
+        internal static string Kullanıcı_Sözleşmesini_okudum__kabul_ediyorum_ {
+            get {
+                return ResourceManager.GetString("Kullanıcı Sözleşmesini okudum, kabul ediyorum.", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Usage Rights.
         /// </summary>
         internal static string Kullanım_Hakları {
@@ -611,11 +710,38 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Customer Name.
+        /// </summary>
+        internal static string Müşteri_Adı {
+            get {
+                return ResourceManager.GetString("Müşteri Adı", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Customer Notification Text.
         /// </summary>
         internal static string Müşteri_Bilgilendirme_Metni {
             get {
                 return ResourceManager.GetString("Müşteri Bilgilendirme Metni", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Net Profit.
+        /// </summary>
+        internal static string Net_Kazanç {
+            get {
+                return ResourceManager.GetString("Net Kazanç", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Payable Amount.
+        /// </summary>
+        internal static string Ödenecek_Tutar {
+            get {
+                return ResourceManager.GetString("Ödenecek Tutar", resourceCulture);
             }
         }
         
@@ -683,6 +809,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sales Share.
+        /// </summary>
+        internal static string Satış_Payı {
+            get {
+                return ResourceManager.GetString("Satış Payı", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Password.
         /// </summary>
         internal static string Şifre {
@@ -719,6 +854,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Order Quantity.
+        /// </summary>
+        internal static string Sipariş_Adeti {
+            get {
+                return ResourceManager.GetString("Sipariş Adeti", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Order Details.
         /// </summary>
         internal static string Sipariş_Detayları {
@@ -728,11 +872,38 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Order Status.
+        /// </summary>
+        internal static string Sipariş_Durumu {
+            get {
+                return ResourceManager.GetString("Sipariş Durumu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Add Order.
         /// </summary>
         internal static string Sipariş_Ekle {
             get {
                 return ResourceManager.GetString("Sipariş Ekle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Order History.
+        /// </summary>
+        internal static string Sipariş_Geçmişi {
+            get {
+                return ResourceManager.GetString("Sipariş Geçmişi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Not Started.
+        /// </summary>
+        internal static string Siparişe_Başlanmadı {
+            get {
+                return ResourceManager.GetString("Siparişe Başlanmadı", resourceCulture);
             }
         }
         
@@ -751,6 +922,15 @@ namespace neoStockMasterv2.Languages {
         internal static string Siparişleri_Görüntüle___Düzenle {
             get {
                 return ResourceManager.GetString("Siparişleri Görüntüle - Düzenle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Order Status.
+        /// </summary>
+        internal static string Siparişlerin_Durumu {
+            get {
+                return ResourceManager.GetString("Siparişlerin Durumu", resourceCulture);
             }
         }
         
@@ -782,6 +962,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Stock Quantity.
+        /// </summary>
+        internal static string Stok_Adeti {
+            get {
+                return ResourceManager.GetString("Stok Adeti", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Add to Stock.
         /// </summary>
         internal static string Stok_Ekle {
@@ -805,6 +994,33 @@ namespace neoStockMasterv2.Languages {
         internal static string Tablo_Kontrolleri {
             get {
                 return ResourceManager.GetString("Tablo Kontrolleri", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tracking Number.
+        /// </summary>
+        internal static string Takip_No {
+            get {
+                return ResourceManager.GetString("Takip No", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Date.
+        /// </summary>
+        internal static string Tarih {
+            get {
+                return ResourceManager.GetString("Tarih", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mobile Number.
+        /// </summary>
+        internal static string Telefon {
+            get {
+                return ResourceManager.GetString("Telefon", resourceCulture);
             }
         }
         
@@ -836,7 +1052,16 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Total Amoun.
+        ///   Looks up a localized string similar to Total Order Quantity.
+        /// </summary>
+        internal static string Toplam_Sipariş_Adeti {
+            get {
+                return ResourceManager.GetString("Toplam Sipariş Adeti", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Total Amount.
         /// </summary>
         internal static string Toplam_Tutar {
             get {
@@ -881,6 +1106,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Product Details.
+        /// </summary>
+        internal static string Ürün_Detayları {
+            get {
+                return ResourceManager.GetString("Ürün Detayları", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Edit Product / Delete.
         /// </summary>
         internal static string Ürün_Düzenle___Sil {
@@ -908,6 +1142,15 @@ namespace neoStockMasterv2.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Product Sales Analytics.
+        /// </summary>
+        internal static string Ürün_Satış_İstatistikleri {
+            get {
+                return ResourceManager.GetString("Ürün Satış İstatistikleri", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Products.
         /// </summary>
         internal static string Ürünler {
@@ -922,6 +1165,21 @@ namespace neoStockMasterv2.Languages {
         internal static string Ürünü_Sil {
             get {
                 return ResourceManager.GetString("Ürünü Sil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to NEOSTOCKMASTER END-USER LICENSE AND DISCLAIMER AGREEMENT
+        ///
+        ///1. PARTIES AND SUBJECT
+        ///This agreement is concluded between the person using the neoStockMaster software (&quot;User&quot;) and the Software Developer/Owner. Installing, running, or using the software means fully accepting the terms of this agreement.
+        ///
+        ///2. FINANCIAL AND CALCULATION DISCLAIMER (LIMITATION OF LIABILITY)
+        ///The Software is an auxiliary tool designed for stock tracking, e-commerce management, currency conversions, and general financial calculatio [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string UserAgreementText {
+            get {
+                return ResourceManager.GetString("UserAgreementText", resourceCulture);
             }
         }
         

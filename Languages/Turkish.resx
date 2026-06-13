@@ -430,4 +430,106 @@
   <data name="Banka Tercihi" xml:space="preserve">
     <value>Banka Tercihi</value>
   </data>
+  <data name="Toplam Sipariş Adeti" xml:space="preserve">
+    <value>Toplam Sipariş Adeti</value>
+  </data>
+  <data name="İşletme Verileri" xml:space="preserve">
+    <value>İşletme Verileri</value>
+  </data>
+  <data name="Brüt Kazanç" xml:space="preserve">
+    <value>Brüt Kazanç</value>
+  </data>
+  <data name="Net Kazanç" xml:space="preserve">
+    <value>Net Kazanç</value>
+  </data>
+  <data name="Siparişlerin Durumu" xml:space="preserve">
+    <value>Siparişlerin Durumu</value>
+  </data>
+  <data name="Siparişe Başlanmadı" xml:space="preserve">
+    <value>Siparişe Başlanmadı</value>
+  </data>
+  <data name="Hazırlanıyor" xml:space="preserve">
+    <value>Hazırlanıyor</value>
+  </data>
+  <data name="Kargoya Verilecek" xml:space="preserve">
+    <value>Kargoya Verilecek</value>
+  </data>
+  <data name="Kargolandı" xml:space="preserve">
+    <value>Kargolandı</value>
+  </data>
+  <data name="Bitti" xml:space="preserve">
+    <value>Bitti</value>
+  </data>
+  <data name="Ürün Detayları" xml:space="preserve">
+    <value>Ürün Detayları</value>
+  </data>
+  <data name="Stok Adeti" xml:space="preserve">
+    <value>Stok Adeti</value>
+  </data>
+  <data name="Sipariş Adeti" xml:space="preserve">
+    <value>Sipariş Adeti</value>
+  </data>
+  <data name="Satış Payı" xml:space="preserve">
+    <value>Satış Payı</value>
+  </data>
+  <data name="Ürün Satış İstatistikleri" xml:space="preserve">
+    <value>Ürün Satış İstatistikleri</value>
+  </data>
+  <data name="Müşteri Adı" xml:space="preserve">
+    <value>Müşteri Adı</value>
+  </data>
+  <data name="Telefon" xml:space="preserve">
+    <value>Telefon</value>
+  </data>
+  <data name="Tarih" xml:space="preserve">
+    <value>Tarih</value>
+  </data>
+  <data name="Ödenecek Tutar" xml:space="preserve">
+    <value>Ödenecek Tutar</value>
+  </data>
+  <data name="KDV/ÖTV" xml:space="preserve">
+    <value>KDV/ÖTV</value>
+  </data>
+  <data name="Sipariş Durumu" xml:space="preserve">
+    <value>Sipariş Durumu</value>
+  </data>
+  <data name="Kargo Firması" xml:space="preserve">
+    <value>Kargo Firması</value>
+  </data>
+  <data name="Takip No" xml:space="preserve">
+    <value>Takip No</value>
+  </data>
+  <data name="Kullanıcı Sözleşmesini okudum, kabul ediyorum." xml:space="preserve">
+    <value>Kullanıcı Sözleşmesini okudum, kabul ediyorum.</value>
+  </data>
+  <data name="UserAgreementText" xml:space="preserve">
+    <value>NEOSTOCKMASTER KULLANICI SÖZLEŞMESİ VE SORUMLULUK REDDİ BEYANI
+
+1. TARAFLAR VE KONU
+İşbu sözleşme, neoStockMaster yazılımını ("Yazılım") kullanan kişi ("Kullanıcı") ile Yazılım Geliştiricisi/Sahibi arasında akdedilmiştir. Yazılımın kurulması, çalıştırılması veya kullanılması, bu sözleşmenin koşullarının tamamen kabul edildiği anlamına gelir.
+
+2. FİNANSAL VE HESAPLAMA SORUMLULUK REDDİ (LİMİTED LIABILITY)
+Yazılım; stok takibi, e-ticaret yönetimi, para birimi çevrimleri ve genel finansal hesaplamalar yapmak üzere tasarlanmış bir yardımcı araçtır. 
+Yazılım içerisinde yapılan her türlü matematiksel hesaplama, kur çevrimi, kar/zarar analizi, stok sayımı ve mali raporlamalar "OLDUĞU GİBİ" (As-Is) sunulmaktadır. Yazılım geliştiricisi, bu hesaplamaların %100 kesintisiz, hatasız veya kusursuz olduğunu garanti etmez. 
+
+Kullanıcı, yazılım tarafından üretilen verileri, finansal kararları uygulamadan önce manuel olarak kontrol etmekle yükümlüdür. Hesaplama hataları, yuvarlama farkları, sistemsel gecikmeler veya veri tabanı uyuşmazlıkları nedeniyle oluşabilecek doğrudan/dolaylı hiçbir maddi zarar, kar kaybı, ticari itibar kaybı veya hukuki yaptırımdan Yazılım Geliştiricisi sorumlu tutulamaz.
+
+3. VERİ GÜVENLİĞİ VE KAYIPLARI
+Yazılım üzerinde tutulan stok verileri, kullanıcı bilgileri ve finansal kayıtların yerel veya bulut tabanlı yedeklenmesi tamamen Kullanıcı sorumluluğundadır. Donanım arızası, işletim sistemi çökmeleri, siber saldırılar veya elektrik kesintileri gibi mücbir sebeplerle oluşabilecek veri kayıplarından Yazılım ve geliştiricisi mesul değildir.
+
+4. LİSANS VE KÖTÜYE KULLANIM
+Yazılımın tersine mühendislik (reverse engineering) yöntemleriyle kaynak koduna dönüştürülmesi, kopyalanması veya izinsiz dağıtılması yasaktır. Kullanıcı, yazılımı yasalara aykırı ticari faaliyetler için kullanamaz.
+
+5. UYUŞMAZLIKLAR
+İşbu sözleşmeden doğacak ihtilaflarda Türkiye Cumhuriyeti Mahkemeleri ve İcra Daireleri yetkilidir.</value>
+  </data>
+  <data name="Anladım, Kapat" xml:space="preserve">
+    <value>Anladım, Kapat</value>
+  </data>
+  <data name="Sipariş Geçmişi" xml:space="preserve">
+    <value>Sipariş Geçmişi</value>
+  </data>
+  <data name="Fiyat Analizi" xml:space="preserve">
+    <value>Fiyat Analizi</value>
+  </data>
 </root>

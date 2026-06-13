@@ -130,6 +130,7 @@ namespace neoStockMasterv2.Data.Services
         public Order GetOrderById(string orderId) =>
             _orders.FirstOrDefault(o => o.ID == orderId);
 
+
         public List<Order> GetOrdersByLoggedInUser()
         {
             if (LoggedInUser == null)

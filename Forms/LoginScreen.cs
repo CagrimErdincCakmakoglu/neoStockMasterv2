@@ -98,7 +98,7 @@ namespace neoStockMasterv2
                 UserInfoScreen.LoggedInUser = loggedInUser;
                 //UserService.LoggedInUser = loggedInUser;
                 //ViewOrdersEditingScreen.LoggedInUser = loggedInUser;
-                //OrderService.LoggedInUser = loggedInUser;
+                OrderService.LoggedInUser = loggedInUser;
                 ZReportScreen.LoggedInUser = loggedInUser;
 
                 MainMenu mainMenu = new MainMenu(loggedInUser);

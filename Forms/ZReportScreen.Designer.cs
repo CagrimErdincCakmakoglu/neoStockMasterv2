@@ -28,70 +28,72 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             menuStripLanguage = new MenuStrip();
             türkçeToolStripMenuItem = new ToolStripMenuItem();
             englishToolStripMenuItem = new ToolStripMenuItem();
             grbBusiness = new GroupBox();
-            dataGridView2 = new DataGridView();
-            dataGridView1 = new DataGridView();
-            label3 = new Label();
-            label2 = new Label();
-            numericUpDown1 = new NumericUpDown();
-            label1 = new Label();
-            groupBox1 = new GroupBox();
-            numericUpDown8 = new NumericUpDown();
-            numericUpDown7 = new NumericUpDown();
-            numericUpDown6 = new NumericUpDown();
-            label7 = new Label();
+            dgwTax = new DataGridView();
+            dgwNetProfit = new DataGridView();
+            dgwGrossProfit = new DataGridView();
+            lblNetProfit = new Label();
+            lblGrossProfit = new Label();
+            nmrTotalOrder = new NumericUpDown();
+            lblTotalOrders = new Label();
+            grbProductDetails = new GroupBox();
             label6 = new Label();
-            numericUpDown5 = new NumericUpDown();
-            numericUpDown4 = new NumericUpDown();
-            numericUpDown3 = new NumericUpDown();
-            numericUpDown2 = new NumericUpDown();
-            label10 = new Label();
-            label9 = new Label();
-            label8 = new Label();
-            label5 = new Label();
-            label4 = new Label();
-            comboBox1 = new ComboBox();
-            monthCalendar1 = new MonthCalendar();
-            groupBox2 = new GroupBox();
-            label11 = new Label();
-            label12 = new Label();
-            label13 = new Label();
-            label14 = new Label();
-            label15 = new Label();
-            numericUpDown9 = new NumericUpDown();
-            numericUpDown10 = new NumericUpDown();
-            numericUpDown11 = new NumericUpDown();
-            numericUpDown12 = new NumericUpDown();
-            numericUpDown13 = new NumericUpDown();
-            radioButton1 = new RadioButton();
-            radioButton2 = new RadioButton();
-            radioButton3 = new RadioButton();
-            radioButton4 = new RadioButton();
-            radioButton5 = new RadioButton();
-            dataGridView3 = new DataGridView();
+            btnPriceAnalysis = new Button();
+            btnOrderHistory = new Button();
+            lwProductDetails = new ListView();
+            lblSalesShare = new Label();
+            nmrSalesShare = new NumericUpDown();
+            nmrOrderQuantity = new NumericUpDown();
+            nmrStockQuantity = new NumericUpDown();
+            lblOrderQuantity = new Label();
+            lblStockQuantity = new Label();
+            cmbProducts = new ComboBox();
+            mcDate = new MonthCalendar();
+            grbOrderStatus = new GroupBox();
+            dgwOrders = new DataGridView();
+            rbOrderFive = new RadioButton();
+            rbOrderFour = new RadioButton();
+            rbOrderThree = new RadioButton();
+            rbOrderTwo = new RadioButton();
+            rbOrderOne = new RadioButton();
+            nmrOrderFive = new NumericUpDown();
+            nmrOrderFour = new NumericUpDown();
+            nmrOrderThree = new NumericUpDown();
+            nmrOrderTwo = new NumericUpDown();
+            nmrOrderOne = new NumericUpDown();
+            lblOrderFive = new Label();
+            lblOrderFourth = new Label();
+            lblOrderThree = new Label();
+            lblOrderTwo = new Label();
+            lblOrderOne = new Label();
+            grbProductStats = new GroupBox();
+            fpMoney = new ScottPlot.WinForms.FormsPlot();
+            fpDateMoney = new ScottPlot.WinForms.FormsPlot();
+            ttGross = new ToolTip(components);
+            ttProfit = new ToolTip(components);
+            ttTax = new ToolTip(components);
             menuStripLanguage.SuspendLayout();
             grbBusiness.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)dataGridView2).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
-            groupBox1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown8).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown7).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown4).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
-            groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown9).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown10).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown11).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown12).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown13).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dgwTax).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dgwNetProfit).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dgwGrossProfit).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrTotalOrder).BeginInit();
+            grbProductDetails.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)nmrSalesShare).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderQuantity).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrStockQuantity).BeginInit();
+            grbOrderStatus.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgwOrders).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderFive).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderFour).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderThree).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderTwo).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderOne).BeginInit();
+            grbProductStats.SuspendLayout();
             SuspendLayout();
             // 
             // menuStripLanguage
@@ -100,7 +102,7 @@
             menuStripLanguage.Items.AddRange(new ToolStripItem[] { türkçeToolStripMenuItem, englishToolStripMenuItem });
             menuStripLanguage.Location = new Point(0, 0);
             menuStripLanguage.Name = "menuStripLanguage";
-            menuStripLanguage.Size = new Size(955, 24);
+            menuStripLanguage.Size = new Size(1321, 24);
             menuStripLanguage.TabIndex = 1;
             menuStripLanguage.Text = "menuStrip1";
             // 
@@ -108,8 +110,9 @@
             // 
             türkçeToolStripMenuItem.Image = Languages.Turkish.TurkFlag;
             türkçeToolStripMenuItem.Name = "türkçeToolStripMenuItem";
-            türkçeToolStripMenuItem.Size = new Size(70, 20);
+            türkçeToolStripMenuItem.Size = new Size(71, 20);
             türkçeToolStripMenuItem.Text = "Türkçe";
+            türkçeToolStripMenuItem.Click += türkçeToolStripMenuItem_Click;
             // 
             // englishToolStripMenuItem
             // 
@@ -117,15 +120,17 @@
             englishToolStripMenuItem.Name = "englishToolStripMenuItem";
             englishToolStripMenuItem.Size = new Size(73, 20);
             englishToolStripMenuItem.Text = "English";
+            englishToolStripMenuItem.Click += englishToolStripMenuItem_Click;
             // 
             // grbBusiness
             // 
-            grbBusiness.Controls.Add(dataGridView2);
-            grbBusiness.Controls.Add(dataGridView1);
-            grbBusiness.Controls.Add(label3);
-            grbBusiness.Controls.Add(label2);
-            grbBusiness.Controls.Add(numericUpDown1);
-            grbBusiness.Controls.Add(label1);
+            grbBusiness.Controls.Add(dgwTax);
+            grbBusiness.Controls.Add(dgwNetProfit);
+            grbBusiness.Controls.Add(dgwGrossProfit);
+            grbBusiness.Controls.Add(lblNetProfit);
+            grbBusiness.Controls.Add(lblGrossProfit);
+            grbBusiness.Controls.Add(nmrTotalOrder);
+            grbBusiness.Controls.Add(lblTotalOrders);
             grbBusiness.Location = new Point(12, 36);
             grbBusiness.Name = "grbBusiness";
             grbBusiness.Size = new Size(357, 274);
@@ -133,410 +138,430 @@
             grbBusiness.TabStop = false;
             grbBusiness.Text = "İşletme Verileri";
             // 
-            // dataGridView2
+            // dgwTax
             // 
-            dataGridView2.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView2.Location = new Point(182, 74);
-            dataGridView2.Name = "dataGridView2";
-            dataGridView2.Size = new Size(169, 150);
-            dataGridView2.TabIndex = 5;
+            dgwTax.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgwTax.Location = new Point(7, 195);
+            dgwTax.Name = "dgwTax";
+            dgwTax.Size = new Size(345, 73);
+            dgwTax.TabIndex = 6;
             // 
-            // dataGridView1
+            // dgwNetProfit
             // 
-            dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Location = new Point(6, 74);
-            dataGridView1.Name = "dataGridView1";
-            dataGridView1.Size = new Size(169, 150);
-            dataGridView1.TabIndex = 4;
+            dgwNetProfit.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgwNetProfit.Location = new Point(183, 66);
+            dgwNetProfit.Name = "dgwNetProfit";
+            dgwNetProfit.Size = new Size(169, 123);
+            dgwNetProfit.TabIndex = 5;
             // 
-            // label3
+            // dgwGrossProfit
             // 
-            label3.AutoSize = true;
-            label3.Location = new Point(231, 56);
-            label3.Name = "label3";
-            label3.Size = new Size(66, 15);
-            label3.TabIndex = 3;
-            label3.Text = "Net Kazanç";
+            dgwGrossProfit.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgwGrossProfit.Location = new Point(7, 66);
+            dgwGrossProfit.Name = "dgwGrossProfit";
+            dgwGrossProfit.Size = new Size(169, 123);
+            dgwGrossProfit.TabIndex = 4;
             // 
-            // label2
+            // lblNetProfit
             // 
-            label2.AutoSize = true;
-            label2.Location = new Point(65, 56);
-            label2.Name = "label2";
-            label2.Size = new Size(69, 15);
-            label2.TabIndex = 2;
-            label2.Text = "Brüt Kazanç";
+            lblNetProfit.AutoSize = true;
+            lblNetProfit.Location = new Point(232, 48);
+            lblNetProfit.Name = "lblNetProfit";
+            lblNetProfit.Size = new Size(66, 15);
+            lblNetProfit.TabIndex = 3;
+            lblNetProfit.Text = "Net Kazanç";
             // 
-            // numericUpDown1
+            // lblGrossProfit
             // 
-            numericUpDown1.Location = new Point(189, 22);
-            numericUpDown1.Name = "numericUpDown1";
-            numericUpDown1.Size = new Size(120, 23);
-            numericUpDown1.TabIndex = 1;
+            lblGrossProfit.AutoSize = true;
+            lblGrossProfit.Location = new Point(66, 48);
+            lblGrossProfit.Name = "lblGrossProfit";
+            lblGrossProfit.Size = new Size(69, 15);
+            lblGrossProfit.TabIndex = 2;
+            lblGrossProfit.Text = "Brüt Kazanç";
             // 
-            // label1
+            // nmrTotalOrder
             // 
-            label1.AutoSize = true;
-            label1.Location = new Point(35, 25);
-            label1.Name = "label1";
-            label1.Size = new Size(114, 15);
-            label1.TabIndex = 0;
-            label1.Text = "Toplam Sipariş Adeti";
+            nmrTotalOrder.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrTotalOrder.Location = new Point(178, 22);
+            nmrTotalOrder.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrTotalOrder.Name = "nmrTotalOrder";
+            nmrTotalOrder.Size = new Size(120, 23);
+            nmrTotalOrder.TabIndex = 1;
             // 
-            // groupBox1
+            // lblTotalOrders
             // 
-            groupBox1.Controls.Add(numericUpDown8);
-            groupBox1.Controls.Add(numericUpDown7);
-            groupBox1.Controls.Add(numericUpDown6);
-            groupBox1.Controls.Add(label7);
-            groupBox1.Controls.Add(label6);
-            groupBox1.Controls.Add(numericUpDown5);
-            groupBox1.Controls.Add(numericUpDown4);
-            groupBox1.Controls.Add(numericUpDown3);
-            groupBox1.Controls.Add(numericUpDown2);
-            groupBox1.Controls.Add(label10);
-            groupBox1.Controls.Add(label9);
-            groupBox1.Controls.Add(label8);
-            groupBox1.Controls.Add(label5);
-            groupBox1.Controls.Add(label4);
-            groupBox1.Controls.Add(comboBox1);
-            groupBox1.Location = new Point(375, 36);
-            groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(222, 274);
-            groupBox1.TabIndex = 0;
-            groupBox1.TabStop = false;
-            groupBox1.Text = "Ürün Detayları";
+            lblTotalOrders.AutoSize = true;
+            lblTotalOrders.Location = new Point(41, 25);
+            lblTotalOrders.Name = "lblTotalOrders";
+            lblTotalOrders.Size = new Size(115, 15);
+            lblTotalOrders.TabIndex = 0;
+            lblTotalOrders.Text = "Toplam Sipariş Adeti";
             // 
-            // numericUpDown8
+            // grbProductDetails
             // 
-            numericUpDown8.Location = new Point(84, 241);
-            numericUpDown8.Name = "numericUpDown8";
-            numericUpDown8.Size = new Size(120, 23);
-            numericUpDown8.TabIndex = 17;
-            // 
-            // numericUpDown7
-            // 
-            numericUpDown7.Location = new Point(84, 212);
-            numericUpDown7.Name = "numericUpDown7";
-            numericUpDown7.Size = new Size(120, 23);
-            numericUpDown7.TabIndex = 16;
-            // 
-            // numericUpDown6
-            // 
-            numericUpDown6.Location = new Point(84, 181);
-            numericUpDown6.Name = "numericUpDown6";
-            numericUpDown6.Size = new Size(120, 23);
-            numericUpDown6.TabIndex = 15;
-            // 
-            // label7
-            // 
-            label7.AutoSize = true;
-            label7.Location = new Point(6, 154);
-            label7.Name = "label7";
-            label7.Size = new Size(38, 15);
-            label7.TabIndex = 7;
-            label7.Text = "label7";
+            grbProductDetails.Controls.Add(label6);
+            grbProductDetails.Controls.Add(btnPriceAnalysis);
+            grbProductDetails.Controls.Add(btnOrderHistory);
+            grbProductDetails.Controls.Add(lwProductDetails);
+            grbProductDetails.Controls.Add(lblSalesShare);
+            grbProductDetails.Controls.Add(nmrSalesShare);
+            grbProductDetails.Controls.Add(nmrOrderQuantity);
+            grbProductDetails.Controls.Add(nmrStockQuantity);
+            grbProductDetails.Controls.Add(lblOrderQuantity);
+            grbProductDetails.Controls.Add(lblStockQuantity);
+            grbProductDetails.Controls.Add(cmbProducts);
+            grbProductDetails.Location = new Point(375, 36);
+            grbProductDetails.Name = "grbProductDetails";
+            grbProductDetails.Size = new Size(222, 274);
+            grbProductDetails.TabIndex = 0;
+            grbProductDetails.TabStop = false;
+            grbProductDetails.Text = "Ürün Detayları";
             // 
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new Point(6, 125);
+            label6.Location = new Point(68, 121);
             label6.Name = "label6";
-            label6.Size = new Size(76, 15);
-            label6.TabIndex = 6;
-            label6.Text = "Ürün Kazancı";
+            label6.Size = new Size(17, 15);
+            label6.TabIndex = 17;
+            label6.Text = "%";
             // 
-            // numericUpDown5
+            // btnPriceAnalysis
             // 
-            numericUpDown5.Location = new Point(84, 152);
-            numericUpDown5.Name = "numericUpDown5";
-            numericUpDown5.Size = new Size(120, 23);
-            numericUpDown5.TabIndex = 14;
+            btnPriceAnalysis.Location = new Point(114, 152);
+            btnPriceAnalysis.Name = "btnPriceAnalysis";
+            btnPriceAnalysis.Size = new Size(102, 23);
+            btnPriceAnalysis.TabIndex = 16;
+            btnPriceAnalysis.Text = "Fiyat Analizi";
+            btnPriceAnalysis.UseVisualStyleBackColor = true;
+            btnPriceAnalysis.Click += btnPriceAnalysis_Click;
             // 
-            // numericUpDown4
+            // btnOrderHistory
             // 
-            numericUpDown4.Location = new Point(84, 123);
-            numericUpDown4.Name = "numericUpDown4";
-            numericUpDown4.Size = new Size(120, 23);
-            numericUpDown4.TabIndex = 13;
+            btnOrderHistory.Location = new Point(6, 152);
+            btnOrderHistory.Name = "btnOrderHistory";
+            btnOrderHistory.Size = new Size(102, 23);
+            btnOrderHistory.TabIndex = 15;
+            btnOrderHistory.Text = "Sipariş Geçmişi";
+            btnOrderHistory.UseVisualStyleBackColor = true;
+            btnOrderHistory.Click += btnOrderHistory_Click;
             // 
-            // numericUpDown3
+            // lwProductDetails
             // 
-            numericUpDown3.Location = new Point(84, 94);
-            numericUpDown3.Name = "numericUpDown3";
-            numericUpDown3.Size = new Size(120, 23);
-            numericUpDown3.TabIndex = 12;
+            lwProductDetails.Location = new Point(6, 181);
+            lwProductDetails.Name = "lwProductDetails";
+            lwProductDetails.Size = new Size(210, 87);
+            lwProductDetails.TabIndex = 6;
+            lwProductDetails.UseCompatibleStateImageBehavior = false;
             // 
-            // numericUpDown2
+            // lblSalesShare
             // 
-            numericUpDown2.Location = new Point(84, 62);
-            numericUpDown2.Name = "numericUpDown2";
-            numericUpDown2.Size = new Size(120, 23);
-            numericUpDown2.TabIndex = 11;
+            lblSalesShare.AutoSize = true;
+            lblSalesShare.Location = new Point(6, 121);
+            lblSalesShare.Name = "lblSalesShare";
+            lblSalesShare.Size = new Size(56, 15);
+            lblSalesShare.TabIndex = 7;
+            lblSalesShare.Text = "Satış Payı";
             // 
-            // label10
+            // nmrSalesShare
             // 
-            label10.AutoSize = true;
-            label10.Location = new Point(6, 243);
-            label10.Name = "label10";
-            label10.Size = new Size(44, 15);
-            label10.TabIndex = 10;
-            label10.Text = "label10";
+            nmrSalesShare.DecimalPlaces = 2;
+            nmrSalesShare.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrSalesShare.Location = new Point(96, 119);
+            nmrSalesShare.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrSalesShare.Name = "nmrSalesShare";
+            nmrSalesShare.Size = new Size(120, 23);
+            nmrSalesShare.TabIndex = 14;
             // 
-            // label9
+            // nmrOrderQuantity
             // 
-            label9.AutoSize = true;
-            label9.Location = new Point(6, 216);
-            label9.Name = "label9";
-            label9.Size = new Size(38, 15);
-            label9.TabIndex = 9;
-            label9.Text = "label9";
+            nmrOrderQuantity.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrOrderQuantity.Location = new Point(96, 91);
+            nmrOrderQuantity.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrOrderQuantity.Name = "nmrOrderQuantity";
+            nmrOrderQuantity.Size = new Size(120, 23);
+            nmrOrderQuantity.TabIndex = 12;
             // 
-            // label8
+            // nmrStockQuantity
             // 
-            label8.AutoSize = true;
-            label8.Location = new Point(6, 189);
-            label8.Name = "label8";
-            label8.Size = new Size(38, 15);
-            label8.TabIndex = 8;
-            label8.Text = "label8";
+            nmrStockQuantity.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrStockQuantity.Location = new Point(96, 62);
+            nmrStockQuantity.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrStockQuantity.Name = "nmrStockQuantity";
+            nmrStockQuantity.Size = new Size(120, 23);
+            nmrStockQuantity.TabIndex = 11;
             // 
-            // label5
+            // lblOrderQuantity
             // 
-            label5.AutoSize = true;
-            label5.Location = new Point(6, 96);
-            label5.Name = "label5";
-            label5.Size = new Size(72, 15);
-            label5.TabIndex = 5;
-            label5.Text = "Sipariş Adeti";
+            lblOrderQuantity.AutoSize = true;
+            lblOrderQuantity.Location = new Point(6, 93);
+            lblOrderQuantity.Name = "lblOrderQuantity";
+            lblOrderQuantity.Size = new Size(72, 15);
+            lblOrderQuantity.TabIndex = 5;
+            lblOrderQuantity.Text = "Sipariş Adeti";
             // 
-            // label4
+            // lblStockQuantity
             // 
-            label4.AutoSize = true;
-            label4.Location = new Point(6, 64);
-            label4.Name = "label4";
-            label4.Size = new Size(61, 15);
-            label4.TabIndex = 4;
-            label4.Text = "Stok Adeti";
+            lblStockQuantity.AutoSize = true;
+            lblStockQuantity.Location = new Point(6, 64);
+            lblStockQuantity.Name = "lblStockQuantity";
+            lblStockQuantity.Size = new Size(61, 15);
+            lblStockQuantity.TabIndex = 4;
+            lblStockQuantity.Text = "Stok Adeti";
             // 
-            // comboBox1
+            // cmbProducts
             // 
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(6, 22);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(198, 23);
-            comboBox1.TabIndex = 3;
+            cmbProducts.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbProducts.FormattingEnabled = true;
+            cmbProducts.Location = new Point(6, 22);
+            cmbProducts.Name = "cmbProducts";
+            cmbProducts.Size = new Size(210, 23);
+            cmbProducts.TabIndex = 3;
+            cmbProducts.SelectedIndexChanged += cmbProducts_SelectedIndexChanged;
             // 
-            // monthCalendar1
+            // mcDate
             // 
-            monthCalendar1.Location = new Point(647, 36);
-            monthCalendar1.Name = "monthCalendar1";
-            monthCalendar1.TabIndex = 3;
+            mcDate.Location = new Point(971, 102);
+            mcDate.Name = "mcDate";
+            mcDate.TabIndex = 3;
             // 
-            // groupBox2
+            // grbOrderStatus
             // 
-            groupBox2.Controls.Add(dataGridView3);
-            groupBox2.Controls.Add(radioButton5);
-            groupBox2.Controls.Add(radioButton4);
-            groupBox2.Controls.Add(radioButton3);
-            groupBox2.Controls.Add(radioButton2);
-            groupBox2.Controls.Add(radioButton1);
-            groupBox2.Controls.Add(numericUpDown13);
-            groupBox2.Controls.Add(numericUpDown12);
-            groupBox2.Controls.Add(numericUpDown11);
-            groupBox2.Controls.Add(numericUpDown10);
-            groupBox2.Controls.Add(numericUpDown9);
-            groupBox2.Controls.Add(label15);
-            groupBox2.Controls.Add(label14);
-            groupBox2.Controls.Add(label13);
-            groupBox2.Controls.Add(label12);
-            groupBox2.Controls.Add(label11);
-            groupBox2.Location = new Point(12, 316);
-            groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(585, 175);
-            groupBox2.TabIndex = 4;
-            groupBox2.TabStop = false;
-            groupBox2.Text = "Siparişlerin Durumu";
-            groupBox2.Enter += groupBox2_Enter;
+            grbOrderStatus.Controls.Add(dgwOrders);
+            grbOrderStatus.Controls.Add(rbOrderFive);
+            grbOrderStatus.Controls.Add(rbOrderFour);
+            grbOrderStatus.Controls.Add(rbOrderThree);
+            grbOrderStatus.Controls.Add(rbOrderTwo);
+            grbOrderStatus.Controls.Add(rbOrderOne);
+            grbOrderStatus.Controls.Add(nmrOrderFive);
+            grbOrderStatus.Controls.Add(nmrOrderFour);
+            grbOrderStatus.Controls.Add(nmrOrderThree);
+            grbOrderStatus.Controls.Add(nmrOrderTwo);
+            grbOrderStatus.Controls.Add(nmrOrderOne);
+            grbOrderStatus.Controls.Add(lblOrderFive);
+            grbOrderStatus.Controls.Add(lblOrderFourth);
+            grbOrderStatus.Controls.Add(lblOrderThree);
+            grbOrderStatus.Controls.Add(lblOrderTwo);
+            grbOrderStatus.Controls.Add(lblOrderOne);
+            grbOrderStatus.Location = new Point(12, 316);
+            grbOrderStatus.Name = "grbOrderStatus";
+            grbOrderStatus.Size = new Size(585, 175);
+            grbOrderStatus.TabIndex = 4;
+            grbOrderStatus.TabStop = false;
+            grbOrderStatus.Text = "Siparişlerin Durumu";
             // 
-            // label11
+            // dgwOrders
             // 
-            label11.AutoSize = true;
-            label11.Location = new Point(23, 29);
-            label11.Name = "label11";
-            label11.Size = new Size(111, 15);
-            label11.TabIndex = 0;
-            label11.Text = "Siparişe Başlanmadı";
+            dgwOrders.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgwOrders.Location = new Point(278, 16);
+            dgwOrders.Name = "dgwOrders";
+            dgwOrders.Size = new Size(301, 150);
+            dgwOrders.TabIndex = 15;
             // 
-            // label12
+            // rbOrderFive
             // 
-            label12.AutoSize = true;
-            label12.Location = new Point(23, 58);
-            label12.Name = "label12";
-            label12.Size = new Size(70, 15);
-            label12.TabIndex = 1;
-            label12.Text = "Hazırlanıyor";
+            rbOrderFive.AutoSize = true;
+            rbOrderFive.Location = new Point(6, 146);
+            rbOrderFive.Name = "rbOrderFive";
+            rbOrderFive.Size = new Size(14, 13);
+            rbOrderFive.TabIndex = 14;
+            rbOrderFive.TabStop = true;
+            rbOrderFive.UseVisualStyleBackColor = true;
             // 
-            // label13
+            // rbOrderFour
             // 
-            label13.AutoSize = true;
-            label13.Location = new Point(23, 87);
-            label13.Name = "label13";
-            label13.Size = new Size(99, 15);
-            label13.TabIndex = 2;
-            label13.Text = "Kargoya Verilecek";
+            rbOrderFour.AutoSize = true;
+            rbOrderFour.Location = new Point(6, 117);
+            rbOrderFour.Name = "rbOrderFour";
+            rbOrderFour.Size = new Size(14, 13);
+            rbOrderFour.TabIndex = 13;
+            rbOrderFour.TabStop = true;
+            rbOrderFour.UseVisualStyleBackColor = true;
             // 
-            // label14
+            // rbOrderThree
             // 
-            label14.AutoSize = true;
-            label14.Location = new Point(23, 116);
-            label14.Name = "label14";
-            label14.Size = new Size(64, 15);
-            label14.TabIndex = 3;
-            label14.Text = "Kargolandı";
+            rbOrderThree.AutoSize = true;
+            rbOrderThree.Location = new Point(6, 87);
+            rbOrderThree.Name = "rbOrderThree";
+            rbOrderThree.Size = new Size(14, 13);
+            rbOrderThree.TabIndex = 12;
+            rbOrderThree.TabStop = true;
+            rbOrderThree.UseVisualStyleBackColor = true;
             // 
-            // label15
+            // rbOrderTwo
             // 
-            label15.AutoSize = true;
-            label15.Location = new Point(23, 146);
-            label15.Name = "label15";
-            label15.Size = new Size(28, 15);
-            label15.TabIndex = 4;
-            label15.Text = "Bitti";
+            rbOrderTwo.AutoSize = true;
+            rbOrderTwo.Location = new Point(6, 58);
+            rbOrderTwo.Name = "rbOrderTwo";
+            rbOrderTwo.Size = new Size(14, 13);
+            rbOrderTwo.TabIndex = 11;
+            rbOrderTwo.TabStop = true;
+            rbOrderTwo.UseVisualStyleBackColor = true;
             // 
-            // numericUpDown9
+            // rbOrderOne
             // 
-            numericUpDown9.Location = new Point(140, 27);
-            numericUpDown9.Name = "numericUpDown9";
-            numericUpDown9.Size = new Size(120, 23);
-            numericUpDown9.TabIndex = 5;
+            rbOrderOne.AutoSize = true;
+            rbOrderOne.Location = new Point(6, 30);
+            rbOrderOne.Name = "rbOrderOne";
+            rbOrderOne.Size = new Size(14, 13);
+            rbOrderOne.TabIndex = 10;
+            rbOrderOne.TabStop = true;
+            rbOrderOne.UseVisualStyleBackColor = true;
             // 
-            // numericUpDown10
+            // nmrOrderFive
             // 
-            numericUpDown10.Location = new Point(140, 56);
-            numericUpDown10.Name = "numericUpDown10";
-            numericUpDown10.Size = new Size(120, 23);
-            numericUpDown10.TabIndex = 6;
+            nmrOrderFive.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrOrderFive.Location = new Point(140, 143);
+            nmrOrderFive.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrOrderFive.Name = "nmrOrderFive";
+            nmrOrderFive.Size = new Size(120, 23);
+            nmrOrderFive.TabIndex = 9;
             // 
-            // numericUpDown11
+            // nmrOrderFour
             // 
-            numericUpDown11.Location = new Point(140, 85);
-            numericUpDown11.Name = "numericUpDown11";
-            numericUpDown11.Size = new Size(120, 23);
-            numericUpDown11.TabIndex = 7;
+            nmrOrderFour.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrOrderFour.Location = new Point(140, 114);
+            nmrOrderFour.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrOrderFour.Name = "nmrOrderFour";
+            nmrOrderFour.Size = new Size(120, 23);
+            nmrOrderFour.TabIndex = 8;
             // 
-            // numericUpDown12
+            // nmrOrderThree
             // 
-            numericUpDown12.Location = new Point(140, 114);
-            numericUpDown12.Name = "numericUpDown12";
-            numericUpDown12.Size = new Size(120, 23);
-            numericUpDown12.TabIndex = 8;
+            nmrOrderThree.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrOrderThree.Location = new Point(140, 85);
+            nmrOrderThree.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrOrderThree.Name = "nmrOrderThree";
+            nmrOrderThree.Size = new Size(120, 23);
+            nmrOrderThree.TabIndex = 7;
             // 
-            // numericUpDown13
+            // nmrOrderTwo
             // 
-            numericUpDown13.Location = new Point(140, 143);
-            numericUpDown13.Name = "numericUpDown13";
-            numericUpDown13.Size = new Size(120, 23);
-            numericUpDown13.TabIndex = 9;
+            nmrOrderTwo.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrOrderTwo.Location = new Point(140, 56);
+            nmrOrderTwo.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrOrderTwo.Name = "nmrOrderTwo";
+            nmrOrderTwo.Size = new Size(120, 23);
+            nmrOrderTwo.TabIndex = 6;
             // 
-            // radioButton1
+            // nmrOrderOne
             // 
-            radioButton1.AutoSize = true;
-            radioButton1.Location = new Point(6, 30);
-            radioButton1.Name = "radioButton1";
-            radioButton1.Size = new Size(14, 13);
-            radioButton1.TabIndex = 10;
-            radioButton1.TabStop = true;
-            radioButton1.UseVisualStyleBackColor = true;
+            nmrOrderOne.Increment = new decimal(new int[] { 0, 0, 0, 0 });
+            nmrOrderOne.Location = new Point(140, 27);
+            nmrOrderOne.Maximum = new decimal(new int[] { 1241513983, 370409800, 542101, 0 });
+            nmrOrderOne.Name = "nmrOrderOne";
+            nmrOrderOne.Size = new Size(120, 23);
+            nmrOrderOne.TabIndex = 5;
             // 
-            // radioButton2
+            // lblOrderFive
             // 
-            radioButton2.AutoSize = true;
-            radioButton2.Location = new Point(6, 58);
-            radioButton2.Name = "radioButton2";
-            radioButton2.Size = new Size(14, 13);
-            radioButton2.TabIndex = 11;
-            radioButton2.TabStop = true;
-            radioButton2.UseVisualStyleBackColor = true;
+            lblOrderFive.AutoSize = true;
+            lblOrderFive.Location = new Point(23, 146);
+            lblOrderFive.Name = "lblOrderFive";
+            lblOrderFive.Size = new Size(28, 15);
+            lblOrderFive.TabIndex = 4;
+            lblOrderFive.Text = "Bitti";
             // 
-            // radioButton3
+            // lblOrderFourth
             // 
-            radioButton3.AutoSize = true;
-            radioButton3.Location = new Point(6, 87);
-            radioButton3.Name = "radioButton3";
-            radioButton3.Size = new Size(14, 13);
-            radioButton3.TabIndex = 12;
-            radioButton3.TabStop = true;
-            radioButton3.UseVisualStyleBackColor = true;
+            lblOrderFourth.AutoSize = true;
+            lblOrderFourth.Location = new Point(23, 116);
+            lblOrderFourth.Name = "lblOrderFourth";
+            lblOrderFourth.Size = new Size(64, 15);
+            lblOrderFourth.TabIndex = 3;
+            lblOrderFourth.Text = "Kargolandı";
             // 
-            // radioButton4
+            // lblOrderThree
             // 
-            radioButton4.AutoSize = true;
-            radioButton4.Location = new Point(6, 117);
-            radioButton4.Name = "radioButton4";
-            radioButton4.Size = new Size(14, 13);
-            radioButton4.TabIndex = 13;
-            radioButton4.TabStop = true;
-            radioButton4.UseVisualStyleBackColor = true;
+            lblOrderThree.AutoSize = true;
+            lblOrderThree.Location = new Point(23, 87);
+            lblOrderThree.Name = "lblOrderThree";
+            lblOrderThree.Size = new Size(99, 15);
+            lblOrderThree.TabIndex = 2;
+            lblOrderThree.Text = "Kargoya Verilecek";
             // 
-            // radioButton5
+            // lblOrderTwo
             // 
-            radioButton5.AutoSize = true;
-            radioButton5.Location = new Point(6, 146);
-            radioButton5.Name = "radioButton5";
-            radioButton5.Size = new Size(14, 13);
-            radioButton5.TabIndex = 14;
-            radioButton5.TabStop = true;
-            radioButton5.UseVisualStyleBackColor = true;
+            lblOrderTwo.AutoSize = true;
+            lblOrderTwo.Location = new Point(23, 58);
+            lblOrderTwo.Name = "lblOrderTwo";
+            lblOrderTwo.Size = new Size(70, 15);
+            lblOrderTwo.TabIndex = 1;
+            lblOrderTwo.Text = "Hazırlanıyor";
             // 
-            // dataGridView3
+            // lblOrderOne
             // 
-            dataGridView3.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView3.Location = new Point(278, 16);
-            dataGridView3.Name = "dataGridView3";
-            dataGridView3.Size = new Size(301, 150);
-            dataGridView3.TabIndex = 15;
+            lblOrderOne.AutoSize = true;
+            lblOrderOne.Location = new Point(23, 29);
+            lblOrderOne.Name = "lblOrderOne";
+            lblOrderOne.Size = new Size(111, 15);
+            lblOrderOne.TabIndex = 0;
+            lblOrderOne.Text = "Siparişe Başlanmadı";
+            // 
+            // grbProductStats
+            // 
+            grbProductStats.Controls.Add(fpMoney);
+            grbProductStats.Controls.Add(fpDateMoney);
+            grbProductStats.Location = new Point(603, 36);
+            grbProductStats.Name = "grbProductStats";
+            grbProductStats.Size = new Size(340, 455);
+            grbProductStats.TabIndex = 5;
+            grbProductStats.TabStop = false;
+            grbProductStats.Text = "Ürün Satış İstatistikleri";
+            // 
+            // fpMoney
+            // 
+            fpMoney.Location = new Point(6, 22);
+            fpMoney.Name = "fpMoney";
+            fpMoney.Size = new Size(328, 203);
+            fpMoney.TabIndex = 6;
+            // 
+            // fpDateMoney
+            // 
+            fpDateMoney.Location = new Point(6, 231);
+            fpDateMoney.Name = "fpDateMoney";
+            fpDateMoney.Size = new Size(328, 218);
+            fpDateMoney.TabIndex = 2;
             // 
             // ZReportScreen
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(955, 539);
-            Controls.Add(groupBox2);
-            Controls.Add(monthCalendar1);
-            Controls.Add(groupBox1);
+            ClientSize = new Size(1321, 495);
+            Controls.Add(grbProductStats);
+            Controls.Add(grbOrderStatus);
+            Controls.Add(mcDate);
+            Controls.Add(grbProductDetails);
             Controls.Add(grbBusiness);
             Controls.Add(menuStripLanguage);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MainMenuStrip = menuStripLanguage;
             MaximizeBox = false;
             Name = "ZReportScreen";
-            Text = "ZReport";
+            Text = " ";
             menuStripLanguage.ResumeLayout(false);
             menuStripLanguage.PerformLayout();
             grbBusiness.ResumeLayout(false);
             grbBusiness.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)dataGridView2).EndInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
-            groupBox1.ResumeLayout(false);
-            groupBox1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown8).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown7).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown4).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown3).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown2).EndInit();
-            groupBox2.ResumeLayout(false);
-            groupBox2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown9).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown10).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown11).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown12).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown13).EndInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dgwTax).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dgwNetProfit).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dgwGrossProfit).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrTotalOrder).EndInit();
+            grbProductDetails.ResumeLayout(false);
+            grbProductDetails.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)nmrSalesShare).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderQuantity).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrStockQuantity).EndInit();
+            grbOrderStatus.ResumeLayout(false);
+            grbOrderStatus.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dgwOrders).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderFive).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderFour).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderThree).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderTwo).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nmrOrderOne).EndInit();
+            grbProductStats.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -547,45 +572,48 @@
         private ToolStripMenuItem türkçeToolStripMenuItem;
         private ToolStripMenuItem englishToolStripMenuItem;
         private GroupBox grbBusiness;
-        private GroupBox groupBox1;
-        private ComboBox comboBox1;
-        private Label label1;
-        private NumericUpDown numericUpDown1;
-        private Label label3;
-        private Label label2;
-        private DataGridView dataGridView2;
-        private DataGridView dataGridView1;
-        private Label label10;
-        private Label label9;
-        private Label label8;
-        private Label label7;
+        private GroupBox grbProductDetails;
+        private ComboBox cmbProducts;
+        private Label lblTotalOrders;
+        private NumericUpDown nmrTotalOrder;
+        private Label lblNetProfit;
+        private Label lblGrossProfit;
+        private DataGridView dgwNetProfit;
+        private DataGridView dgwGrossProfit;
+        private Label lblSalesShare;
+        private Label lblOrderQuantity;
+        private Label lblStockQuantity;
+        private NumericUpDown nmrSalesShare;
+        private NumericUpDown nmrOrderQuantity;
+        private NumericUpDown nmrStockQuantity;
+        private MonthCalendar mcDate;
+        private GroupBox grbOrderStatus;
+        private Label lblOrderFive;
+        private Label lblOrderFourth;
+        private Label lblOrderThree;
+        private Label lblOrderTwo;
+        private Label lblOrderOne;
+        private NumericUpDown nmrOrderFive;
+        private NumericUpDown nmrOrderFour;
+        private NumericUpDown nmrOrderThree;
+        private NumericUpDown nmrOrderTwo;
+        private NumericUpDown nmrOrderOne;
+        private RadioButton rbOrderFive;
+        private RadioButton rbOrderFour;
+        private RadioButton rbOrderThree;
+        private RadioButton rbOrderTwo;
+        private RadioButton rbOrderOne;
+        private DataGridView dgwOrders;
+        private GroupBox grbProductStats;
+        private DataGridView dgwTax;
+        private ListView lwProductDetails;
+        private Button btnPriceAnalysis;
+        private Button btnOrderHistory;
         private Label label6;
-        private Label label5;
-        private Label label4;
-        private NumericUpDown numericUpDown8;
-        private NumericUpDown numericUpDown7;
-        private NumericUpDown numericUpDown6;
-        private NumericUpDown numericUpDown5;
-        private NumericUpDown numericUpDown4;
-        private NumericUpDown numericUpDown3;
-        private NumericUpDown numericUpDown2;
-        private MonthCalendar monthCalendar1;
-        private GroupBox groupBox2;
-        private Label label15;
-        private Label label14;
-        private Label label13;
-        private Label label12;
-        private Label label11;
-        private NumericUpDown numericUpDown13;
-        private NumericUpDown numericUpDown12;
-        private NumericUpDown numericUpDown11;
-        private NumericUpDown numericUpDown10;
-        private NumericUpDown numericUpDown9;
-        private RadioButton radioButton5;
-        private RadioButton radioButton4;
-        private RadioButton radioButton3;
-        private RadioButton radioButton2;
-        private RadioButton radioButton1;
-        private DataGridView dataGridView3;
+        private ScottPlot.WinForms.FormsPlot fpDateMoney;
+        private ScottPlot.WinForms.FormsPlot fpMoney;
+        private ToolTip ttGross;
+        private ToolTip ttProfit;
+        private ToolTip ttTax;
     }
 }

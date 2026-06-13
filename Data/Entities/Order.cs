@@ -18,6 +18,8 @@ namespace neoStockMasterv2.Data.Entities
         public decimal Tax { get; set; }
         public decimal TaxPercentageVAT { get; set; }
         public decimal TaxPercentageSCT { get; set; }
+        public decimal TaxAmountVAT { get; set; }  // KDV'nin TL tutarı
+        public decimal TaxAmountSCT { get; set; }  // ÖTV'nin TL tutarı
         public decimal DiscountPercentage { get; set; }
         public decimal ExtraDiscountAmount { get; set; }
         public List<OrderDetail> OrderContent { get; set; }
@@ -43,6 +45,7 @@ namespace neoStockMasterv2.Data.Entities
             public int Quantity { get; set; }
             public string Currency { get; set; }
             public decimal Total { get; set; }
+            public bool IsDiscounted { get; set; }
         }
     }
 }

@@ -87,7 +87,7 @@ namespace neoStockMasterv2.Forms
 
             UpdateDateTimePickerLanguage();
 
-            // Yeni eklendi: radio button'ları sıfırla, formu ilk boyuna döndür
+            // Radio button'ları sıfırla, formu ilk boyuna döndür
             rbRead.Checked = false;
             rbEdit.Checked = false;
             rbDelete.Checked = false;
@@ -557,9 +557,7 @@ namespace neoStockMasterv2.Forms
             lwDisc.MouseClick -= lwDisc_MouseClick;
             lwDisc.MouseClick += lwDisc_MouseClick;
 
-            lwDisc.ItemCheck -= lwDisc_ItemCheck;
-            lwDisc.ItemCheck += lwDisc_ItemCheck;
-
+            // Yalnızca ItemChecked kullanılır; ItemCheck kaldırıldı (çift tetiklenmeyi önlemek için)
             lwDisc.ItemChecked -= lwDisc_ItemChecked;
             lwDisc.ItemChecked += lwDisc_ItemChecked;
         }
@@ -854,11 +852,11 @@ namespace neoStockMasterv2.Forms
             foreach (var detail in selectedOrder.OrderContent)
             {
                 dgwProducts.Rows.Add(
-                    detail.ProductName,                     // Name
-                    detail.OrderPrice.ToString("F2"),       // Price
-                    detail.Currency,                        // PriceCurrency
-                    detail.Quantity,                        // OrderQuantity
-                    detail.Total.ToString("F2")             // Total
+                    detail.ProductName,   // Name
+                    detail.OrderPrice,    // Price  — decimal
+                    detail.Currency,      // PriceCurrency
+                    detail.Quantity,      // OrderQuantity
+                    detail.Total          // Total   — decimal
                 );
             }
 
@@ -867,46 +865,62 @@ namespace neoStockMasterv2.Forms
             {
                 var item = new ListViewItem("");
                 item.SubItems.Add(detail.ProductName);
-                item.SubItems.Add(detail.Total.ToString("F2"));
+
+                // Tutarı parse et - TR kültürü ile (virgül ondalık ayraç)
+                decimal rawTotal = detail.Total;
+                item.SubItems.Add(rawTotal.ToString("F2"));
                 item.SubItems.Add(detail.Currency);
 
+                bool applyDiscount = detail.IsDiscounted;
+
+                // İndirim durumu göster
                 string discountStatus;
-                if (selectedOrder.DiscountPercentage > 0)
-                {
-                    decimal percDiscOnLoad = detail.Total * (selectedOrder.DiscountPercentage / 100m);
-                    discountStatus = isTurkish
-                        ? $"%{selectedOrder.DiscountPercentage} ({percDiscOnLoad:N2})"
-                        : $"%{selectedOrder.DiscountPercentage} ({percDiscOnLoad:N2})";
-                }
+                if (applyDiscount && selectedOrder.DiscountPercentage > 0 && selectedOrder.ExtraDiscountAmount > 0)
+                    discountStatus = $"%{selectedOrder.DiscountPercentage} (+{selectedOrder.ExtraDiscountAmount:F2})";
+                else if (applyDiscount && selectedOrder.DiscountPercentage > 0)
+                    discountStatus = $"%{selectedOrder.DiscountPercentage}";
+                else if (applyDiscount && selectedOrder.ExtraDiscountAmount > 0)
+                    discountStatus = $"+{selectedOrder.ExtraDiscountAmount:F2}";
                 else
-                {
                     discountStatus = isTurkish ? "İndirim Yok" : "No Discount";
-                }
 
                 item.SubItems.Add(discountStatus);
-                item.SubItems.Add(selectedOrder.ExtraDiscountAmount.ToString("F2"));
 
+                // İndirim miktarı
+                string discAmountText = applyDiscount ? selectedOrder.ExtraDiscountAmount.ToString("F2") : "0,00";
+                item.SubItems.Add(discAmountText);
 
-                // ÖTV ve KDV tutarlarını yüklenirken de hesapla
-                decimal percDiscOnLoadForTax = detail.Total * (selectedOrder.DiscountPercentage / 100m);
-                decimal extraDiscOnLoad = selectedOrder.ExtraDiscountAmount;
-                decimal priceAfterDiscOnLoad = detail.Total - percDiscOnLoadForTax - extraDiscOnLoad;
-                if (priceAfterDiscOnLoad < 0) priceAfterDiscOnLoad = 0;
+                // ÖTV ve KDV — sadece IsDiscounted olanlar için hesapla
+                // Vergi her zaman TL cinsinden gösterilir; dövizli ürünlerde kur çarpılır
+                decimal sctValOnLoad = 0m, vatValOnLoad = 0m;
+                if (applyDiscount)
+                {
+                    decimal percDisc = rawTotal * (selectedOrder.DiscountPercentage / 100m);
+                    decimal priceAfterDisc = rawTotal - percDisc - selectedOrder.ExtraDiscountAmount;
+                    if (priceAfterDisc < 0) priceAfterDisc = 0;
 
-                decimal sctValOnLoad = priceAfterDiscOnLoad * (selectedOrder.TaxPercentageSCT / 100m);
-                decimal vatValOnLoad = (priceAfterDiscOnLoad + sctValOnLoad) * (selectedOrder.TaxPercentageVAT / 100m);
+                    // Kur çarpanı: dövizliyse _cachedRates kullan (null ise 1 → TL gibi davran)
+                    decimal loadRateToTL = 1m;
+                    if (!IsTL(detail.Currency) && _cachedRates != null)
+                        loadRateToTL = GetRateToTL(detail.Currency, _cachedRates);
 
-                string sctStatus = selectedOrder.TaxPercentageSCT > 0
-                    ? $"%{selectedOrder.TaxPercentageSCT} ({sctValOnLoad:N2})"
+                    // Vergi tutarları TL cinsinden
+                    sctValOnLoad = priceAfterDisc * loadRateToTL * (selectedOrder.TaxPercentageSCT / 100m);
+                    vatValOnLoad = (priceAfterDisc * loadRateToTL + sctValOnLoad) * (selectedOrder.TaxPercentageVAT / 100m);
+                }
+
+                string sctStatus = (applyDiscount && selectedOrder.TaxPercentageSCT > 0)
+                    ? $"%{selectedOrder.TaxPercentageSCT} ({sctValOnLoad:N2} TL)"
                     : (isTurkish ? "ÖTV Yok" : "No Excise Tax");
 
-                string vatStatus = selectedOrder.TaxPercentageVAT > 0
-                    ? $"%{selectedOrder.TaxPercentageVAT} ({vatValOnLoad:N2})"
+                string vatStatus = (applyDiscount && selectedOrder.TaxPercentageVAT > 0)
+                    ? $"%{selectedOrder.TaxPercentageVAT} ({vatValOnLoad:N2} TL)"
                     : (isTurkish ? "KDV Yok" : "No VAT");
 
                 item.SubItems.Add(sctStatus);
                 item.SubItems.Add(vatStatus);
 
+                item.Tag = rawTotal;
                 lwDisc.Items.Add(item);
             }
 
@@ -1088,7 +1102,6 @@ namespace neoStockMasterv2.Forms
                 _previousProductName = dgwProducts.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
             }
 
-            // 🟢 Yeni Ekleme: Fiyat veya Sipariş Adeti düzenleniyorsa önceki değeri sakla
             if (dgwProducts.Columns[e.ColumnIndex].Name == "Price" ||
                 dgwProducts.Columns[e.ColumnIndex].Name == "OrderQuantity")
             {
@@ -1169,7 +1182,7 @@ namespace neoStockMasterv2.Forms
             {
                 bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
 
-                // ── Mevcut siparişi al ────────────────────────────────────────────
+                // ── Mevcut siparişi al 
                 var existingOrder = _orderService.GetOrderById(selectedOrderId);
                 if (existingOrder == null)
                 {
@@ -1196,7 +1209,7 @@ namespace neoStockMasterv2.Forms
                     return;
                 }
 
-                // ── Onay diyaloğu: hangi alanlar değişti? ───────────────────────
+                // ── Onay diyaloğu: hangi alanlar değişti? ─
                 string changeListText = string.Join(Environment.NewLine, changes.Select(c => $"  • {c}"));
                 string confirmMsg = isTurkish
                     ? $"Aşağıdaki değişiklikler uygulanacak:{Environment.NewLine}{Environment.NewLine}{changeListText}{Environment.NewLine}{Environment.NewLine}Güncellemek istiyor musunuz?"
@@ -1208,10 +1221,7 @@ namespace neoStockMasterv2.Forms
 
                 if (result != DialogResult.Yes) return;
 
-                // ── Güncelleme işlemini yap ──────────────────────────────────────
-                // Güncelleme sırasında nmrCargo, cmbDisc, cmbSCT, cmbVAT gibi
-                // kontrollerin ValueChanged/SelectedIndexChanged event'lerinin
-                // ek onay diyaloğu açmasını engelle
+                // ── Güncelleme işlemini yap ─
                 _isLoading = true;
                 bool success;
                 try
@@ -1248,10 +1258,6 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-        /// <summary>
-        /// Formdaki güncel verilerden yeni bir Order nesnesi oluşturur.
-        /// ID ve AddedBy alanları eskiyle aynı kalır.
-        /// </summary>
         private Order BuildUpdatedOrderFromForm(Order existing)
         {
             var updated = new Order
@@ -1705,22 +1711,11 @@ namespace neoStockMasterv2.Forms
                 string currency = lwItem.SubItems.Count > 3 ? lwItem.SubItems[3].Text : "Türk Lirası";
                 if (string.IsNullOrWhiteSpace(currency)) currency = "Türk Lirası";
 
-                // Ham toplam (fiyat × adet) dgwProducts'tan
-                string productName = lwItem.SubItems[1].Text;
-                DataGridViewRow dgwRow = dgwProducts.Rows.Cast<DataGridViewRow>()
-                    .FirstOrDefault(r => r.Cells["Name"].Value?.ToString() == productName);
+                // Ham toplam — Tag'den oku, string parse hatası yok
+                decimal rawTotal = lwItem.Tag is decimal tagVal ? tagVal : 0m;
 
-                decimal rawTotal = 0;
-                if (dgwRow != null)
-                    decimal.TryParse(dgwRow.Cells["Total"].Value?.ToString(),
-                        System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.CurrentCulture, out rawTotal);
-
-                // Final tutar (indirim + vergi uygulanmış) lwDisc SubItems[2]'den
-                decimal finalVal = 0;
-                decimal.TryParse(lwItem.SubItems[2].Text,
-                    System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.CurrentCulture, out finalVal);
+                // Final tutar = rawTotal ile başla (Tag zaten güncel değeri tutar)
+                decimal finalVal = rawTotal;
 
                 // İndirim tutarı
                 decimal percD = 0, fixD = 0;
@@ -1730,10 +1725,10 @@ namespace neoStockMasterv2.Forms
                 if (lwItem.SubItems.Count > 5)
                     decimal.TryParse(lwItem.SubItems[5].Text,
                         System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.CurrentCulture, out fixD);
+                        new System.Globalization.CultureInfo("tr-TR"), out fixD);
                 decimal discountVal = rawTotal * percD + fixD;
 
-                // Vergi tutarı (ÖTV + KDV parantez içinden)
+                // Vergi tutarı (ÖTV + KDV parantez içinden) — her zaman TL cinsinden
                 decimal taxVal = 0;
                 if (lwItem.SubItems.Count > 6)
                 {
@@ -1741,7 +1736,9 @@ namespace neoStockMasterv2.Forms
                     int so = sctText.IndexOf('('), sc = sctText.IndexOf(')');
                     if (so >= 0 && sc > so)
                     {
-                        string num = sctText.Substring(so + 1, sc - so - 1).TrimStart('+');
+                        // "TL" veya boşluk gibi son ekleri temizle
+                        string num = sctText.Substring(so + 1, sc - so - 1)
+                                            .TrimStart('+').Replace("TL", "").Trim();
                         if (decimal.TryParse(num, System.Globalization.NumberStyles.Any,
                             System.Globalization.CultureInfo.CurrentCulture, out decimal sv)) taxVal += sv;
                     }
@@ -1752,7 +1749,8 @@ namespace neoStockMasterv2.Forms
                     int vo = vatText.IndexOf('('), vc = vatText.IndexOf(')');
                     if (vo >= 0 && vc > vo)
                     {
-                        string num = vatText.Substring(vo + 1, vc - vo - 1).TrimStart('+');
+                        string num = vatText.Substring(vo + 1, vc - vo - 1)
+                                            .TrimStart('+').Replace("TL", "").Trim();
                         if (decimal.TryParse(num, System.Globalization.NumberStyles.Any,
                             System.Globalization.CultureInfo.CurrentCulture, out decimal vv)) taxVal += vv;
                     }
@@ -1855,16 +1853,18 @@ namespace neoStockMasterv2.Forms
                         if (itemCurrency != kvp.Key) continue;
 
                         // ÖTV tutarını SubItems[6]'dan parantez içinden oku
+                        // Değer zaten TL cinsinden yazılmış — rateToTL ile çarpma!
                         if (lwItem.SubItems.Count > 6)
                         {
                             string sctText = lwItem.SubItems[6].Text;
                             int so = sctText.IndexOf('('), sc = sctText.IndexOf(')');
                             if (so >= 0 && sc > so)
                             {
-                                string num = sctText.Substring(so + 1, sc - so - 1).TrimStart('+');
+                                string num = sctText.Substring(so + 1, sc - so - 1)
+                                                    .TrimStart('+').Replace("TL", "").Trim();
                                 if (decimal.TryParse(num, System.Globalization.NumberStyles.Any,
                                     System.Globalization.CultureInfo.CurrentCulture, out decimal sv))
-                                    totalSctTL += sv * rateToTL;
+                                    totalSctTL += sv; // Zaten TL — kur çarpmaya gerek yok
                             }
                         }
 
@@ -1875,10 +1875,11 @@ namespace neoStockMasterv2.Forms
                             int vo = vatText.IndexOf('('), vc = vatText.IndexOf(')');
                             if (vo >= 0 && vc > vo)
                             {
-                                string num = vatText.Substring(vo + 1, vc - vo - 1).TrimStart('+');
+                                string num = vatText.Substring(vo + 1, vc - vo - 1)
+                                                    .TrimStart('+').Replace("TL", "").Trim();
                                 if (decimal.TryParse(num, System.Globalization.NumberStyles.Any,
                                     System.Globalization.CultureInfo.CurrentCulture, out decimal vv))
-                                    totalVatTL += vv * rateToTL;
+                                    totalVatTL += vv; // Zaten TL — kur çarpmaya gerek yok
                             }
                         }
                     }
@@ -1917,7 +1918,7 @@ namespace neoStockMasterv2.Forms
 
 
         // Toplam tutarları güncelleyen yardımcı metot
-        private void UpdateTotalAmounts(bool preserveRates = false)
+        private async void UpdateTotalAmounts(bool preserveRates = false)
         {
             // 1. Ürün bazlı ham toplamları dgwProducts'tan hesapla ve Total hücresine yaz
             for (int i = 0; i < dgwProducts.Rows.Count; i++)
@@ -1929,14 +1930,13 @@ namespace neoStockMasterv2.Forms
                 if (!decimal.TryParse(row.Cells["OrderQuantity"].Value?.ToString(), out decimal qty)) continue;
 
                 decimal lineTotal = price * qty;
-                row.Cells["Total"].Value = lineTotal.ToString("N2");
+                row.Cells["Total"].Value = lineTotal;
             }
 
             // 2. İndirim ve vergi oranlarını oku
             decimal percentageRate = 0;
             if (cmbDisc.SelectedIndex > 0)
             {
-                // Örn: "%10 İndirim Yap" → sadece ilk rakam grubunu al
                 var match = System.Text.RegularExpressions.Regex.Match(
                     cmbDisc.SelectedItem.ToString(), @"\d+");
                 if (match.Success) decimal.TryParse(match.Value, out percentageRate);
@@ -1960,19 +1960,45 @@ namespace neoStockMasterv2.Forms
                 if (match.Success) decimal.TryParse(match.Value, out vatRate);
             }
 
-            // 3. Seçili satır sayısı (artık bölme yapılmıyor; her seçili satıra tam değer uygulanır)
-            int checkedCount = lwDisc.Items.Cast<ListViewItem>().Count(i => i.Checked);
+            // 3. Döviz kurlarını önceden çek (dövizli+işaretli satır varsa)
+            bool needsExchange = lwDisc.Items.Cast<ListViewItem>()
+                .Any(it => it.Checked && !IsTL(it.SubItems.Count > 3 ? it.SubItems[3].Text : ""));
 
-            // 4. lwDisc satırlarını güncelle (fixedAmountDisc her satıra tam olarak uygulanır)
-            UpdateLwDiscItems(percentageRate / 100m, fixedAmountDisc, sctRate, vatRate, applyRates: !preserveRates);
+            if (needsExchange && _cachedRates == null)
+            {
+                try
+                {
+                    var forexService = new neoStockMasterv2.Data.Services.BankServices.FREEMARKETforex();
+                    _cachedRates = await forexService.GetExchangeRatesAsync();
+                }
+                catch
+                {
+                    _cachedRates = new Dictionary<string, (decimal, decimal)>();
+                }
+            }
+
+            // 4. lwDisc satırlarını güncelle
+            UpdateLwDiscItems(percentageRate / 100m, fixedAmountDisc, sctRate, vatRate,
+                              applyRates: !preserveRates, exchangeRates: _cachedRates);
 
             // 5. Özet tablolarını lwDisc'ten yeniden hesapla (multi-currency gruplu)
             UpdateSummaryListViews(null, null, null);
         }
 
+        // Para biriminin TL olup olmadığını kontrol eder (PricingOrderScreen ile aynı mantık)
+        private bool IsTL(string currency)
+        {
+            return string.IsNullOrWhiteSpace(currency) ||
+                   currency.Equals("Türk Lirası", StringComparison.OrdinalIgnoreCase) ||
+                   currency.Equals("TRY", StringComparison.OrdinalIgnoreCase) ||
+                   currency.Equals("TL", StringComparison.OrdinalIgnoreCase) ||
+                   currency.Equals("₺", StringComparison.OrdinalIgnoreCase);
+        }
+
         private void UpdateLwDiscItems(decimal percRate, decimal fixDiscPerLine,
                                        decimal sctRate, decimal vatRate,
-                                       bool applyRates = true)
+                                       bool applyRates = true,
+                                       Dictionary<string, (decimal BuyRate, decimal SellRate)> exchangeRates = null)
         {
             if (lwDisc == null) return;
 
@@ -1986,11 +2012,27 @@ namespace neoStockMasterv2.Forms
 
                 if (row == null) continue;
 
-                if (!decimal.TryParse(row.Cells["Total"].Value?.ToString(),
+                // Para birimini al (SubItems[3])
+                string itemCurrency = item.SubItems.Count > 3 ? item.SubItems[3].Text : "Türk Lirası";
+                if (string.IsNullOrWhiteSpace(itemCurrency)) itemCurrency = "Türk Lirası";
+                bool isForeignCurrency = !IsTL(itemCurrency);
+
+                // Kur çarpanını hesapla: dövizliyse kur çarp, TL ise 1
+                decimal rateToTL = 1m;
+                if (isForeignCurrency && exchangeRates != null)
+                    rateToTL = GetRateToTL(itemCurrency, exchangeRates);
+
+                // Tag'de decimal varsa direkt oku; yoksa hücreden parse et
+                decimal originalAmount = 0;
+                if (item.Tag is decimal tagAmt)
+                    originalAmount = tagAmt;
+                else if (row.Cells["Total"].Value is decimal cellDec)
+                    originalAmount = cellDec;
+                else
+                    decimal.TryParse(row.Cells["Total"].Value?.ToString(),
                         System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.CurrentCulture,
-                        out decimal originalAmount))
-                    originalAmount = 0;
+                        new System.Globalization.CultureInfo("tr-TR"),
+                        out originalAmount);
 
                 if (!item.Checked)
                 {
@@ -2013,11 +2055,14 @@ namespace neoStockMasterv2.Forms
                     decimal uPercDisc = originalAmount * uPercRate;
                     decimal uAfterDisc = originalAmount - uPercDisc - uFixDisc;
                     if (uAfterDisc < 0) uAfterDisc = 0;
-                    decimal uSctVal = uAfterDisc * (uSctRate / 100m);
-                    decimal uVatVal = (uAfterDisc + uSctVal) * (uVatRate / 100m);
-                    decimal uFinal = uAfterDisc + uSctVal + uVatVal;
+
+                    // Vergi TL cinsinden hesaplanır
+                    decimal uSctVal_TL = uAfterDisc * rateToTL * (uSctRate / 100m);
+                    decimal uVatVal_TL = (uAfterDisc * rateToTL + uSctVal_TL) * (uVatRate / 100m);
+                    decimal uFinal = uAfterDisc + (uSctVal_TL + uVatVal_TL) / rateToTL;
 
                     item.SubItems[2].Text = uFinal.ToString("N2");
+                    // NOT: item.Tag güncellenmez — ham tutar korunur.
 
                     item.SubItems[4].Text = uPercRate > 0
                         ? $"%{uPercRate * 100:0} ({uPercDisc:N2})"
@@ -2026,11 +2071,11 @@ namespace neoStockMasterv2.Forms
                     item.SubItems[5].Text = uFixDisc.ToString("N2");
 
                     item.SubItems[6].Text = uSctRate > 0
-                        ? $"%{uSctRate} ({uSctVal:N2})"
+                        ? $"%{uSctRate} ({uSctVal_TL:N2} TL)"
                         : (isTurkish ? "ÖTV Yok" : "No Excise Tax");
 
                     item.SubItems[7].Text = uVatRate > 0
-                        ? $"%{uVatRate} ({uVatVal:N2})"
+                        ? $"%{uVatRate} ({uVatVal_TL:N2} TL)"
                         : (isTurkish ? "KDV Yok" : "No VAT");
 
                     continue;
@@ -2053,20 +2098,20 @@ namespace neoStockMasterv2.Forms
                         decimal.TryParse(percMatch.Groups[1].Value, out usePercRate);
                     usePercRate /= 100m; // % → oran
 
-                    // Sabit indirim: SubItems[5]'ten doğrudan oku (sadece nmrDisc değeri tutuluyor)
+                    // Sabit indirim: SubItems[5]'ten doğrudan oku
                     decimal.TryParse(item.SubItems[5].Text,
                         System.Globalization.NumberStyles.Any,
                         System.Globalization.CultureInfo.CurrentCulture,
                         out useFixDisc);
 
-                    // ÖTV oranı: SubItems[6] → "%20 (+...)"
+                    // ÖTV oranı: SubItems[6] → "%20 (...)"
                     useSctRate = 0;
                     var sctMatch = System.Text.RegularExpressions.Regex.Match(
                         item.SubItems[6].Text, @"%(\d+)");
                     if (sctMatch.Success)
                         decimal.TryParse(sctMatch.Groups[1].Value, out useSctRate);
 
-                    // KDV oranı: SubItems[7] → "%18 (+...)"
+                    // KDV oranı: SubItems[7] → "%18 (...)"
                     useVatRate = 0;
                     var vatMatch = System.Text.RegularExpressions.Regex.Match(
                         item.SubItems[7].Text, @"%(\d+)");
@@ -2083,35 +2128,34 @@ namespace neoStockMasterv2.Forms
                 decimal priceAfterDiscount = originalAmount - totalLineDiscount;
                 if (priceAfterDiscount < 0) priceAfterDiscount = 0;
 
-                // 3. ÖTV - İndirimli tutar üzerinden
-                decimal sctVal = priceAfterDiscount * (useSctRate / 100m);
+                // 3. ÖTV — dövizse önce TL'ye çevir, vergiyi TL üzerinden hesapla
+                decimal sctVal_TL = priceAfterDiscount * rateToTL * (useSctRate / 100m);
 
-                // 4. KDV - (İndirimli Tutar + ÖTV) üzerinden
-                decimal vatVal = (priceAfterDiscount + sctVal) * (useVatRate / 100m);
+                // 4. KDV — (İndirimli Tutar + ÖTV) TL üzerinden
+                decimal vatVal_TL = (priceAfterDiscount * rateToTL + sctVal_TL) * (useVatRate / 100m);
 
-                decimal finalLineTotal = priceAfterDiscount + sctVal + vatVal;
+                // 5. Final tutar: döviz kısmı orijinal birimde + vergiler orijinal birime geri çevrilmiş
+                decimal finalLineTotal = priceAfterDiscount + (sctVal_TL + vatVal_TL) / rateToTL;
 
                 // --- GÖRSEL GÜNCELLEME ---
                 item.SubItems[2].Text = finalLineTotal.ToString("N2");
+                // NOT: item.Tag kasıtlı olarak güncellenmez — ham tutar korunur.
 
                 // --- GÖRSEL FORMAT ---
-                // SubItems[4]: İndirim Durumu → yalnızca yüzde indirim ve tutarını göster; nmrDisc buraya yazılmaz
                 if (usePercRate > 0)
                     item.SubItems[4].Text = $"%{usePercRate * 100:0} ({percDiscVal:N2})";
                 else
                     item.SubItems[4].Text = isTurkish ? "İndirim Yok" : "No Discount";
 
-                // SubItems[5]: İndirim → sadece nmrDisc'ten gelen sabit tutar
                 item.SubItems[5].Text = useFixDisc.ToString("N2");
 
-                // SubItems[6]: ÖTV Durumu → "%20 (1234,56)"
+                // ÖTV ve KDV her zaman TL olarak gösterilir (PricingOrderScreen ile aynı)
                 item.SubItems[6].Text = useSctRate > 0
-                    ? $"%{useSctRate} ({sctVal:N2})"
+                    ? $"%{useSctRate} ({sctVal_TL:N2} TL)"
                     : (isTurkish ? "ÖTV Yok" : "No Excise Tax");
 
-                // SubItems[7]: KDV Durumu → "%18 (234,56)"
                 item.SubItems[7].Text = useVatRate > 0
-                    ? $"%{useVatRate} ({vatVal:N2})"
+                    ? $"%{useVatRate} ({vatVal_TL:N2} TL)"
                     : (isTurkish ? "KDV Yok" : "No VAT");
             }
         }
@@ -2177,9 +2221,11 @@ namespace neoStockMasterv2.Forms
             }
         }
 
+        // lwDisc_ItemCheck artık InitializeLwDisc'te bağlanmıyor.
+        // Çift tetiklenmeyi önlemek için devre dışı bırakıldı; yalnızca lwDisc_ItemChecked kullanılır.
         private void lwDisc_ItemCheck(object sender, ItemCheckEventArgs e)
         {
-            this.BeginInvoke(new Action(() => UpdateControlsAccessibility()));
+            // Kasıtlı olarak boş bırakıldı.
         }
 
         private void lwDisc_ItemChecked(object sender, ItemCheckedEventArgs e)

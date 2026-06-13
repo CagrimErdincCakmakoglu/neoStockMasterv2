@@ -140,6 +140,12 @@ namespace neoStockMasterv2.Forms
                 if (openForm != this) // MainMenu harici formlar
                 {
                     openForm.TopMost = alwaysOnTop;
+
+                    // Eğer form TotalTreeViewForm ise ekstra olarak öne getirilmeyi zorlayalım
+                    if (openForm.Name == "TotalTreeViewForm" && alwaysOnTop)
+                    {
+                        openForm.BringToFront();
+                    }
                 }
             }
         }

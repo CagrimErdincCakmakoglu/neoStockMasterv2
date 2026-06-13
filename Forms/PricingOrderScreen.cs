@@ -1,4 +1,4 @@
-using neoStockMasterv2.Data.Entities;
+﻿using neoStockMasterv2.Data.Entities;
 using neoStockMasterv2.Data.Services;
 using neoStockMasterv2.Data.Services.BankServices;
 using neoStockMasterv2.Languages;
@@ -26,6 +26,8 @@ namespace neoStockMasterv2.Forms
         private ComboBox currencyComboBox = null;
         private bool isExpanded = false;    // Başlangıçta kapalı varsayıyoruz
         private int originalHeight;         // GroupBox'ın orijinal yüksekliği
+        private decimal _lastVatAmountTL = 0m;
+        private decimal _lastSctAmountTL = 0m;
 
         private ListView hoveredListView; // Hangi ListView'de hover olduğunu tutar
         private bool isHovering = false;
@@ -659,13 +661,13 @@ namespace neoStockMasterv2.Forms
             foreach (var product in products)
             {
                 dgwProducts.Rows.Add(
-                    product.Name,                // 1. sütun: Ürün adı
-                    product.Cost,                // 2. sütun: Maliyet
-                    product.CostCurrency,        // 3. sütun: Stok
-                    product.Stock,               // 4. sütun: Maliyet para birimi
-                    product.Price,               // 5. sütun: Satış fiyatı
-                    product.PriceCurrency,       // 6. sütun: Satış para birimi
-                    0                            // Sipariş adeti başlangıçta 0
+                    product.Name,                // 1. sütun: Name
+                    product.Cost,                // 2. sütun: Cost
+                    product.CostCurrency,        // 3. sütun: CostCurrency
+                    product.Stock,               // 4. sütun: StockQuantity
+                    product.Price,               // 5. sütun: Price
+                    product.PriceCurrency,       // 6. sütun: PriceCurrency
+                    0                            // 7. sütun: OrderQuantity
                 );
             }
         }
@@ -740,6 +742,23 @@ namespace neoStockMasterv2.Forms
             {
                 int.TryParse(tb.Text, out qty);
                 price = ParseDecimalFlexible(row.Cells["Price"].Value?.ToString());
+
+                // Stok kontrolü: yazarken anlık kontrol
+                if (int.TryParse(row.Cells["StockQuantity"].Value?.ToString(), out int stockQtyLive) && qty > stockQtyLive)
+                {
+                    bool isTurkishLive = LanguageService.CurrentLanguage == "Türkçe";
+                    string msgLive = isTurkishLive
+                        ? $"'{productName}' ürününün stok miktarı {stockQtyLive} adettir. Sipariş adeti stok miktarını aşamaz. Sipariş adeti sıfırlandı."
+                        : $"The stock quantity of '{productName}' is {stockQtyLive}. Order quantity cannot exceed stock quantity. Order quantity has been reset to zero.";
+                    string titleLive = isTurkishLive ? "Stok Yetersiz" : "Insufficient Stock";
+
+                    MessageBox.Show(msgLive, titleLive, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                    tb.TextChanged -= ProductCell_TextChanged;
+                    tb.Text = "0";
+                    tb.TextChanged += ProductCell_TextChanged;
+                    qty = 0;
+                }
             }
 
             var existingRow = dgwOrderDetails.Rows
@@ -794,6 +813,35 @@ namespace neoStockMasterv2.Forms
                 var cell = dgwProducts.Rows[e.RowIndex].Cells[e.ColumnIndex];
                 if (cell.Value == null || string.IsNullOrWhiteSpace(cell.Value.ToString()))
                     cell.Value = 0;
+
+                // Stok miktarı kontrolü
+                var row = dgwProducts.Rows[e.RowIndex];
+                if (int.TryParse(cell.Value?.ToString(), out int orderQty) &&
+                    int.TryParse(row.Cells["StockQuantity"].Value?.ToString(), out int stockQty))
+                {
+                    if (orderQty > stockQty)
+                    {
+                        bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+                        string productName = row.Cells["Name"].Value?.ToString() ?? "";
+
+                        string message = isTurkish
+                            ? $"'{productName}' ürününün stok miktarı {stockQty} adettir. Sipariş adeti stok miktarını aşamaz. Sipariş adeti sıfırlandı."
+                            : $"The stock quantity of '{productName}' is {stockQty}. Order quantity cannot exceed stock quantity. Order quantity has been reset to zero.";
+
+                        string title = isTurkish ? "Stok Yetersiz" : "Insufficient Stock";
+
+                        MessageBox.Show(message, title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                        cell.Value = 0;
+
+                        // dgwOrderDetails'tan da ilgili satırı kaldır
+                        var existingRow = dgwOrderDetails.Rows
+                            .Cast<DataGridViewRow>()
+                            .FirstOrDefault(r => r.Cells["Name"].Value?.ToString() == productName);
+                        if (existingRow != null)
+                            dgwOrderDetails.Rows.Remove(existingRow);
+                    }
+                }
             }
 
             if (dgwProducts.Columns[e.ColumnIndex].Name == "OrderQuantity") // EK ADIM BABACIM
@@ -1224,6 +1272,8 @@ namespace neoStockMasterv2.Forms
         private async Task ApplyDiscountAndTaxes()
         {
             bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+            decimal totalVatAmount_TL = 0m;
+            decimal totalSctAmount_TL = 0m;
 
             // --- Vergi oranlarını al ---
             decimal sctRate = 0;
@@ -1315,6 +1365,8 @@ namespace neoStockMasterv2.Forms
                 }
 
                 totalTaxAmount_TL += sctInTL + vatInTL;
+                totalVatAmount_TL += vatInTL;
+                totalSctAmount_TL += sctInTL;
 
                 // --- ListView Güncelle ---
                 item.SubItems[COL_TOTAL].Text = tutarSon.ToString("F2");
@@ -1345,6 +1397,9 @@ namespace neoStockMasterv2.Forms
 
             UpdateTotalsFromDisc();
             UpdateDiscsFromDisc();
+
+            _lastVatAmountTL = totalVatAmount_TL;
+            _lastSctAmountTL = totalSctAmount_TL;
         }
 
         private bool IsTL(string currency)
@@ -2039,6 +2094,15 @@ namespace neoStockMasterv2.Forms
             allTablesForm.Size = new Size(900, 700);
             allTablesForm.StartPosition = FormStartPosition.CenterParent;
 
+            allTablesForm.Owner = this; // Bu formun sahibini belirle
+
+            // MainMenu'daki chbTop durumuna göre TopMost ayarla
+            var mainMenu = Application.OpenForms["MainMenu"] as MainMenu;
+            if (mainMenu != null && mainMenu.chbTop.Checked)
+            {
+                allTablesForm.TopMost = true;
+            }
+
             // Panel (dikey layout için)
             var panel = new TableLayoutPanel
             {
@@ -2176,7 +2240,7 @@ namespace neoStockMasterv2.Forms
 
             // 2. Telefon numarası kontrolü
             string phone = new string(mskPhoneNo.Text.Where(char.IsDigit).ToArray());
-            if (phone.Length < 10) // Türkiye için 10 haneli (5317091246)
+            if (phone.Length < 10) // Türkiye için 10 haneli (5xxxxxxxxx)
             {
                 MessageBox.Show(
                     isTurkish ? "Numarayı eksiksiz giriniz." : "Please enter the full phone number.",
@@ -2266,7 +2330,14 @@ namespace neoStockMasterv2.Forms
             // --- DOĞRU KARGO SEÇİMİ ---
             string selectedCargo = "";
 
-            if (string.IsNullOrWhiteSpace(LoggedInUser.Cargo))
+            int orderStatusIndex = cmbOrderStatus.SelectedIndex;
+
+            if (orderStatusIndex == 0 || orderStatusIndex == 1 || orderStatusIndex == 2)
+            {
+                // Sipariş henüz kargoya verilmedi → kargo bilgisi yok
+                selectedCargo = "-";
+            }
+            else if (string.IsNullOrWhiteSpace(LoggedInUser.Cargo))
             {
                 // Kullanıcının kayıtlı kargo bilgisi yok → her zaman txtCargo
                 selectedCargo = txtCargo.Text.Trim();
@@ -2286,7 +2357,7 @@ namespace neoStockMasterv2.Forms
                 CustomerName = txtCustomerName.Text,
                 CustomerPhone = mskPhoneNo.Text,
                 Cargo = selectedCargo,
-                CargoTrackingNumber = txtCargoTracker.Text,
+                CargoTrackingNumber = (orderStatusIndex == 0 || orderStatusIndex == 1 || orderStatusIndex == 2) ? "-" : txtCargoTracker.Text,
                 PayableStatues = cmbPayment.SelectedItem?.ToString(),
                 OrderStatues = cmbOrderStatus.SelectedItem?.ToString(),
                 CargoCost = nmrCargo.Value,
@@ -2302,7 +2373,7 @@ namespace neoStockMasterv2.Forms
             foreach (ListViewItem item in lwTotal.Items)
             {
                 string currency = item.SubItems[0].Text;
-                if (decimal.TryParse(item.SubItems[1].Text, out decimal value))
+                if (TryParseDecimalFlexible(item.SubItems[1].Text, out decimal value))
                     order.TotalPrice[currency] = value;
             }
 
@@ -2310,7 +2381,7 @@ namespace neoStockMasterv2.Forms
             foreach (ListViewItem item in lwDiscList.Items)
             {
                 string currency = item.SubItems[0].Text;
-                if (decimal.TryParse(item.SubItems[1].Text, out decimal value))
+                if (TryParseDecimalFlexible(item.SubItems[1].Text, out decimal value))
                     order.TotalDiscount[currency] = value;
             }
 
@@ -2318,35 +2389,60 @@ namespace neoStockMasterv2.Forms
             foreach (ListViewItem item in lwTotal.Items)
             {
                 string currency = item.SubItems[0].Text;
-                if (decimal.TryParse(item.SubItems[1].Text, out decimal value))
+                if (TryParseDecimalFlexible(item.SubItems[1].Text, out decimal value))
                     order.PayableAmount[currency] = value;
             }
 
             // Vergi (lwTax sadece TL)
             if (lwTax.Items.Count > 0)
             {
-                if (decimal.TryParse(lwTax.Items[0].SubItems[1].Text, out decimal tax))
+                if (TryParseDecimalFlexible(lwTax.Items[0].SubItems[1].Text, out decimal tax))
                     order.Tax = tax;
             }
 
             // Vergi oranları
             order.TaxPercentageVAT = GetSelectedPercentFromCombo(cmbVAT);
             order.TaxPercentageSCT = GetSelectedPercentFromCombo(cmbSCT);
+            order.TaxAmountVAT = _lastVatAmountTL;
+            order.TaxAmountSCT = _lastSctAmountTL;
 
             // Sipariş detayları (dgwOrderDetails)
             foreach (DataGridViewRow row in dgwOrderDetails.Rows)
             {
                 if (row.IsNewRow) continue;
 
+                string productName = row.Cells["Name"].Value?.ToString();
+                int quantity = Convert.ToInt32(row.Cells["OrderQuantity"].Value ?? 0);
+                string currency = row.Cells["PriceCurrency"].Value?.ToString();
+
+                // lwDisc'ten bu ürüne ait hesaplanmış son tutarı bul
+                decimal finalTotal = 0m;
+                ListViewItem matchedItem = null;
+                foreach (ListViewItem lwItem in lwDisc.Items)
+                {
+                    if (lwItem.SubItems[COL_NAME].Text == productName &&
+                        lwItem.SubItems[COL_CURRENCY].Text == currency)
+                    {
+                        matchedItem = lwItem;
+                        TryParseDecimalFlexible(lwItem.SubItems[COL_TOTAL].Text, out finalTotal);
+                        break;
+                    }
+                }
+
+                // Birim fiyat = toplam / adet  (adet 0 ise ham fiyatı kullan)
+                decimal unitPrice = quantity > 0
+                    ? finalTotal / quantity
+                    : ParseDecimalFlexible(row.Cells["Price"].Value?.ToString() ?? "0");
+
                 var detail = new Order.OrderDetail
                 {
-                    ProductName = row.Cells["Name"].Value?.ToString(),
-                    OrderPrice = ParseDecimalFlexible(row.Cells["Price"].Value?.ToString() ?? "0"),
-                    Quantity = Convert.ToInt32(row.Cells["OrderQuantity"].Value ?? 0),
-                    Currency = row.Cells["PriceCurrency"].Value?.ToString(),
-                    Total = ParseDecimalFlexible(row.Cells["Total"].Value?.ToString() ?? "0")
+                    ProductName = productName,
+                    OrderPrice = unitPrice,   // ← Artık indirim+vergi sonrası birim fiyat
+                    Quantity = quantity,
+                    Currency = currency,
+                    Total = finalTotal,
+                    IsDiscounted = matchedItem?.Checked ?? false // Checkbox işaretli ise indirim uygulanmış demektir
                 };
-
                 order.OrderContent.Add(detail);
             }
 
@@ -2386,6 +2482,13 @@ namespace neoStockMasterv2.Forms
                     LoggedInUser.Language,
                     LoggedInUser.Password
                 );
+            }
+
+            // === Stok Düşürme: Sipariş edilen ürünlerin stoklarını güncelle ===
+            foreach (var detail in order.OrderContent)
+            {
+                if (detail.Quantity <= 0) continue;
+                _productService.UpdateStockAfterOrder(detail.ProductName, detail.Quantity);
             }
 
             // dgwProducts tablosundaki Sipariş Adeti sütunu sıfırlansın
@@ -2438,8 +2541,5 @@ namespace neoStockMasterv2.Forms
             }
             return 0;
         }
-
-
     }
-
 }

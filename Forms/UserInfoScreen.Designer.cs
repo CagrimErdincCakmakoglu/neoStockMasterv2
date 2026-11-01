@@ -103,7 +103,7 @@
             // 
             türkçeToolStripMenuItem.Image = Languages.Turkish.TurkFlag;
             türkçeToolStripMenuItem.Name = "türkçeToolStripMenuItem";
-            türkçeToolStripMenuItem.Size = new Size(70, 20);
+            türkçeToolStripMenuItem.Size = new Size(71, 20);
             türkçeToolStripMenuItem.Text = "Türkçe";
             türkçeToolStripMenuItem.Click += türkçeToolStripMenuItem_Click;
             // 
@@ -422,7 +422,7 @@
             lblDateTimeRegistration.AutoSize = true;
             lblDateTimeRegistration.Location = new Point(6, 33);
             lblDateTimeRegistration.Name = "lblDateTimeRegistration";
-            lblDateTimeRegistration.Size = new Size(64, 15);
+            lblDateTimeRegistration.Size = new Size(65, 15);
             lblDateTimeRegistration.TabIndex = 0;
             lblDateTimeRegistration.Text = "Kayıt Tarihi";
             // 
@@ -633,7 +633,6 @@
         private NumericUpDown nmrRemainingDays;
         private GroupBox grbSerial;
         private System.Windows.Forms.Timer timerMailScroll;
-        private System.Windows.Forms.Timer timerUsernameScroll;
         private System.Windows.Forms.Timer timerUsernameScroll2;
     }
 }

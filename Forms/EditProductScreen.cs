@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +25,8 @@ namespace neoStockMasterv2.Forms
             InitializeComponent();
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
+
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
         }
 
         private void EditProductScreen_Load(object sender, EventArgs e)
@@ -222,9 +223,6 @@ namespace neoStockMasterv2.Forms
                 return;
             }
 
-            // ID'yi değişkende tut (gerekirse global değişken olabilir)
-            string selectedProductId = selectedProduct.ID;
-
             // rdbEdit seçiliyse bilgileri doldur
             if (rdbEdit.Checked)
             {
@@ -291,7 +289,6 @@ namespace neoStockMasterv2.Forms
 
             var selectedProduct = service.GetProductsByLoggedInUser()
                                          .FirstOrDefault(p => p.Name.Equals(selectedProductName, StringComparison.OrdinalIgnoreCase));
-            string selectedProductId = selectedProduct.ID;
 
             if (selectedProduct != null)
             {
@@ -341,7 +338,7 @@ namespace neoStockMasterv2.Forms
         "Arjantin Pesosu", "Azerbaycan Manatı", "Bosna-Hersek Markı", "Bulgar Levası", "Bahreyn Dinarı", "Brezilya Reali", "Belarus Rublesi",
         "Şili Pesosu", "Çin Yuanı", "Kolombiya Pesosu", "Kosta Rika Kolonu", "Çek Korunası", "Sepet Kur", "Cezayir Dinarı", "Mısır Lirası",
         "Gürcistan Larisi", "Hong Kong Doları", "Hırvat Kunası", "Macar Forinti", "Endonezya Rupiahi", "İsrail Şekeli", "Hindistan Rupisi",
-        "Irak Dinarı", "İran Riyali", "İzlanda Kronası", "Ürdün Dinarı", "Güney Kore Wonu", "Kazan Tengesi", "Lübnan Lirası", "Sri Lanka Rupisi",
+        "Irak Dinarı", "İran Riyali", "İzlanda Kronası", "Ürdün Dinarı", "Güney Kore Wonu", "Kazak Tengesi", "Lübnan Lirası", "Sri Lanka Rupisi",
         "Litvanya Litası", "Letonya Latsı", "Libya Dinarı", "Fas Dirhemi", "Moldovya Leusu", "Makedon Dinarı", "Meksika Pesosu", "Malezya Ringgiti",
         "Yeni Zelanda Doları", "Umman Riyali", "Peru İnti", "Filipinler Pesosu", "Pakistan Rupisi", "Polonya Zlotisi", "Katar Riyali",
         "Romanya Leyi", "Sırbistan Dinarı", "Suudi Arabistan Riyali", "Singapur Doları", "Suriye Lirası", "Tayland Bahtı", "Tunus Dinarı",
@@ -359,18 +356,8 @@ namespace neoStockMasterv2.Forms
             cmbPrice.Items.Clear();
             cmbDelPrice.Items.Clear();
 
-            foreach (string currency in sortedCurrencies)
-            {
-                cmbCost.Items.Add(currency);
-                cmbDelCost.Items.Add(currency);
-                cmbPrice.Items.Add(currency);
-                cmbDelPrice.Items.Add(currency);
-            }
-
-            cmbCost.SelectedIndex = 0;
-            cmbPrice.SelectedIndex = 0;
-
             int maxWidth = 0;
+
             using (Graphics g = cmbCost.CreateGraphics())
             {
                 foreach (string currency in sortedCurrencies)
@@ -585,7 +572,8 @@ namespace neoStockMasterv2.Forms
                 DateAdded = DateTime.Now,
             };
 
-            _productService.UpdateProduct(oldProductName, updatedProduct);
+            if (!_productService.UpdateProduct(oldProductName, updatedProduct))
+                return; 
 
             // Güncelleme sonrası başarı mesajı göster
             string successMsg = LanguageService.CurrentLanguage == "Türkçe"
@@ -658,31 +646,30 @@ namespace neoStockMasterv2.Forms
 
             bool success = _productService.AddStockToProduct(selectedProduct.Name, amountToAdd);
 
-            if (success)
+            if (!success)
             {
-                string successMsg = LanguageService.CurrentLanguage == "Türkçe"
-                    ? "Stok başarıyla eklendi."
-                    : "Stock added successfully.";
-                MessageBox.Show(successMsg, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ProductUpdated?.Invoke(this, EventArgs.Empty); // güncel liste
-                nmrUpgAddStock.Value = 0;
-
-                // Güncel stok değerini al
-                var updatedProduct = _productService.GetProductsByLoggedInUser()
-                                                    .FirstOrDefault(p => p.Name.Equals(selectedProductName, StringComparison.OrdinalIgnoreCase));
-                if (updatedProduct != null)
-                {
-                    nmrUpgStock.Value = updatedProduct.Stock;
-                }
-            }
-            else
-            {
-                string errorMsg = LanguageService.CurrentLanguage == "Türkçe"
-                    ? "Stok eklenemedi."
-                    : "Failed to add stock.";
+                string errorMsg = LanguageService.CurrentLanguage == "Türkçe" ? "Stok eklenemedi." : "Failed to add stock.";
                 MessageBox.Show(errorMsg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-        }
+
+            ActivityLogService.Log(ActivityType.StockAdded, new Dictionary<string, string>
+            {
+                ["Product"] = selectedProduct.Name,
+                ["Quantity"] = amountToAdd.ToString()
+            });
+
+            string successMsg = LanguageService.CurrentLanguage == "Türkçe" ? "Stok başarıyla eklendi." : "Stock added successfully.";
+            MessageBox.Show(successMsg, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ProductUpdated?.Invoke(this, EventArgs.Empty);
+            nmrUpgAddStock.Value = 0;
+
+            var updatedProduct = _productService.GetProductsByLoggedInUser()
+                .FirstOrDefault(p => p.Name.Equals(selectedProductName, StringComparison.OrdinalIgnoreCase));
+            if (updatedProduct != null)
+                nmrUpgStock.Value = updatedProduct.Stock;
+        }  
+        
 
         private void rdbDelete_CheckedChanged(object sender, EventArgs e)
         {

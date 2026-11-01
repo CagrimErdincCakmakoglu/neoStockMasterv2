@@ -101,7 +101,6 @@
             btnForgetUsername.TabIndex = 0;
             btnForgetUsername.Text = "Kullanıcı İsmini Unuttum";
             btnForgetUsername.UseVisualStyleBackColor = true;
-            btnForgetUsername.Click += btnForgetUsername_Click;
             // 
             // btnForgetPassword
             // 
@@ -111,7 +110,6 @@
             btnForgetPassword.TabIndex = 1;
             btnForgetPassword.Text = "Şifremi Unuttum";
             btnForgetPassword.UseVisualStyleBackColor = true;
-            btnForgetPassword.Click += btnForgetPassword_Click;
             // 
             // RecoveryScreen
             // 

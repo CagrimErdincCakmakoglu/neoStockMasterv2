@@ -16,7 +16,6 @@ namespace neoStockMasterv2.Forms
     {
         public event Action<string> LanguageChanged;
         string selectedLanguage;
-        string email = "";
 
         public RecoveryScreen(string language)
         {
@@ -35,15 +34,8 @@ namespace neoStockMasterv2.Forms
             }
 
             LanguageService.LanguageChanged += UpdateLanguage;
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= UpdateLanguage;
             UpdateLanguage();
-        }
-
-        private void SelectMenuStripLanguage(string userLanguage)
-        {
-            foreach (ToolStripMenuItem item in menuStripLanguage.Items)
-            {
-                break;
-            }
         }
 
         private void UpdateLanguage()
@@ -54,7 +46,6 @@ namespace neoStockMasterv2.Forms
             btnForgetPassword.Text = LanguageService.GetString("Şifremi Hatırlat");
 
             this.Text = LanguageService.GetString("Bilgilerimi Hatırlat");
-            SelectMenuStripLanguage(selectedLanguage);
         }
 
         private void türkçeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -75,71 +66,81 @@ namespace neoStockMasterv2.Forms
             LanguageChanged?.Invoke("English");
         }
 
-        private void btnForgetUsername_Click(object sender, EventArgs e)
+        private async void btnForgetUsername_Click(object sender, EventArgs e)
         {
-            email = txtMail.Text;
+            string email = GetValidatedEmail();
+            if (email == null) return;
 
-            if (CheckMailField())
+            var user = new UserService().FindUserByEmail(email);
+            if (user == null)
             {
-                try
-                {
-                    var mailAddress = new System.Net.Mail.MailAddress(email);
+                MessageBox.Show(LanguageService.T("Bu e-posta adresine ait kullanıcı bulunamadı.", "No user was found for this e-mail address."),
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
-                    string recipientEmail = txtMail.Text;
-                    UserService userService = new UserService();
-
-                    User user = userService.FindUserByEmail(recipientEmail);
-
-                    if (user != null)
-                    {
-                        EmailService emailService = new EmailService("stockmasterapp@gmail.com", "bfbi cpom gikz azjx");
-                        emailService.SendForgotUsernameEmail(recipientEmail, user.Name);
-                        MessageBox.Show("Kullanıcı adınız hatırlatıldı.");
-                    }
-                    else
-                    {
-                        MessageBox.Show("Bu e-posta adresine ait kullanıcı bulunamadı.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                catch (FormatException)
-                {
-                    MessageBox.Show("Geçersiz mail adresi formatı. Lütfen doğru bir mail adresi giriniz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
+            btnForgetUsername.Enabled = false;
+            try
+            {
+                await new EmailService().SendForgotUsernameEmailAsync(email, user.Name);
+                MessageBox.Show(LanguageService.T("Kullanıcı adınız e-posta adresinize gönderildi.", "Your username has been sent to your e-mail address."),
+                    LanguageService.T("Bilgi", "Info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(LanguageService.T("E-posta gönderilemedi: ", "The e-mail could not be sent: ") + ex.Message,
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnForgetUsername.Enabled = true;
             }
         }
 
-        private void btnForgetPassword_Click(object sender, EventArgs e)
+        private async void btnForgetPassword_Click(object sender, EventArgs e)
         {
-            email = txtMail.Text;
+            string email = GetValidatedEmail();
+            if (email == null) return;
 
-            if (CheckMailField())
+            var confirm = MessageBox.Show(
+                LanguageService.T(
+                    "Hesabınız için yeni bir geçici şifre oluşturulup e-posta adresinize gönderilecek. Devam edilsin mi?",
+                    "A new temporary password will be created for your account and sent to your e-mail address. Continue?"),
+                LanguageService.T("Şifre Sıfırlama", "Password Reset"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm != DialogResult.Yes) return;
+
+            btnForgetPassword.Enabled = false;
+            try
             {
-                try
-                {
-                    var mailAddress = new System.Net.Mail.MailAddress(email);
+                var (success, message) = await new UserService().ResetPasswordAsync(email);
+                MessageBox.Show(message,
+                    success ? LanguageService.T("Bilgi", "Info") : LanguageService.T("Hata", "Error"),
+                    MessageBoxButtons.OK, success ? MessageBoxIcon.Information : MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(LanguageService.T("E-posta gönderilemedi, şifreniz değişmedi: ", "The e-mail could not be sent, your password was not changed: ") + ex.Message,
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnForgetPassword.Enabled = true;
+            }
+        }
 
-                    string recipientEmail = txtMail.Text;
-                    UserService userService = new UserService();
+        private string GetValidatedEmail()
+        {
+            if (!CheckMailField()) return null;
 
-                    User user = userService.FindUserByEmail(recipientEmail);
-
-                    if (user != null)
-                    {
-                        EmailService emailService = new EmailService("stockmasterapp@gmail.com", "bfbi cpom gikz azjx");
-                        emailService.SendForgotPasswordEmail(recipientEmail, user.Password);
-                        MessageBox.Show("Şifreniz hatırlatıldı.");
-                    }
-                    else
-                    {
-                        MessageBox.Show("Bu e-posta adresine ait kullanıcı bulunamadı.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                catch (FormatException)
-                {
-                    MessageBox.Show("Geçersiz mail adresi formatı. Lütfen doğru bir mail adresi giriniz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
+            try
+            {
+                return new System.Net.Mail.MailAddress(txtMail.Text.Trim()).Address;
+            }
+            catch (FormatException)
+            {
+                MessageBox.Show(LanguageService.T("Geçersiz mail adresi formatı. Lütfen doğru bir mail adresi giriniz.", "Invalid e-mail format. Please enter a valid e-mail address."),
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
             }
         }
 
@@ -147,7 +148,8 @@ namespace neoStockMasterv2.Forms
         {
             if (string.IsNullOrWhiteSpace(txtMail.Text))
             {
-                MessageBox.Show("Mail alanı boş bırakılamaz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(LanguageService.T("Mail alanı boş bırakılamaz.", "The e-mail field cannot be empty."),
+                    LanguageService.T("Uyarı", "Warning"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtMail.Focus();
                 return false;
             }

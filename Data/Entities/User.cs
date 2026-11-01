@@ -1,35 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Security.Cryptography;
 using Newtonsoft.Json;
 
 namespace neoStockMasterv2.Data.Entities
 {
     public class User
     {
+        [JsonProperty]
         public string ID { get; private set; }
         public string Name { get; set; }
         public string Email { get; set; }
-        public string Password { get; set; }
+        public string Password { get; set; }          // artık PBKDF2 hash tutar
         public string Cargo { get; set; }
         public DateTime RegistrationDate { get; set; }
-        public int UsageRemainingDays { get; set; }
-        public int RemainingDays { get; set; }
         public string Language { get; set; }
 
+        // Abonelik
+        public DateTime? SubscriptionEnd { get; set; }
+        public List<string> UsedSerialKeys { get; set; } = new List<string>();
+
+        [Obsolete("Sadece eski users.json kayıtlarını taşımak için. DaysLeft kullanın.")]
+        public int RemainingDays { get; set; }
+
+        [JsonIgnore]
+        public int DaysLeft => SubscriptionEnd.HasValue
+            ? Math.Max(0, (SubscriptionEnd.Value.Date - DateTime.Today).Days)
+            : 0;
 
         [JsonProperty]
         public List<LoginRecord> LoginHistory { get; private set; } = new List<LoginRecord>();
 
         [JsonProperty]
-        public string VerificationCode { get;  private set; }
+        public string VerificationCode { get; private set; }
 
         [JsonProperty]
         public bool IsVerified { get; set; } = false;
-
-
 
         public User(string name, string email, string password, string language, string verificationCode = null)
         {
@@ -41,37 +45,38 @@ namespace neoStockMasterv2.Data.Entities
             Language = language;
             VerificationCode = verificationCode ?? GenerateVerificationCode();
         }
-        public string GenerateVerificationCode()
+
+        public static string GenerateVerificationCode() =>
+            RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+
+#pragma warning disable CS0618
+        // Eski "RemainingDays" değerini bitiş tarihine çevirir (girişte bir kez çalışır)
+        public bool MigrateLegacySubscription()
         {
-            Random random = new Random();
-            return random.Next(100000, 999999).ToString();
+            if (SubscriptionEnd == null && RemainingDays > 0)
+            {
+                SubscriptionEnd = DateTime.Today.AddDays(RemainingDays);
+                RemainingDays = 0;
+                return true;
+            }
+            return false;
         }
+#pragma warning restore CS0618
 
         public void AddLoginIp(string ip)
         {
             ip = ip?.Trim();
 
-            // Aynı gün aynı IP ile giriş yapılmışsa tekrar ekleme
-            if (!string.IsNullOrEmpty(ip) && !LoginHistory.Any(record => record.IP.Trim() == ip && record.LoginDate.Date == DateTime.Now.Date))
-            {
-                // 6'dan fazla kayıt varsa en eskisini sil
-                if (LoginHistory.Count >= 6)
-                {
-                    // En eski giriş tarihli kaydı bul ve sil
-                    var oldest = LoginHistory.OrderBy(r => r.LoginDate).FirstOrDefault();
-                    if (oldest != null)
-                    {
-                        LoginHistory.Remove(oldest);
-                    }
-                }
+            if (string.IsNullOrEmpty(ip)) return;
+            if (LoginHistory.Any(r => r.IP.Trim() == ip && r.LoginDate.Date == DateTime.Today)) return;
 
-                // Yeni kaydı ekle
-                LoginHistory.Add(new LoginRecord
-                {
-                    IP = ip,
-                    LoginDate = DateTime.Now
-                });
+            if (LoginHistory.Count >= 6)
+            {
+                var oldest = LoginHistory.OrderBy(r => r.LoginDate).First();
+                LoginHistory.Remove(oldest);
             }
+
+            LoginHistory.Add(new LoginRecord { IP = ip, LoginDate = DateTime.Now });
         }
     }
 }

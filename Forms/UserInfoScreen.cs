@@ -24,8 +24,6 @@ namespace neoStockMasterv2.Forms
         private int scrollIndex = 0;
 
         public static User LoggedInUser { get; set; }
-        private readonly string senderEmail = "stockmasterapp@gmail.com";
-        private readonly string senderPassword = "bfbi cpom gikz azjx";
         UserService userService = new UserService();
 
 
@@ -33,15 +31,25 @@ namespace neoStockMasterv2.Forms
         public UserInfoScreen(string selectedLanguage)
         {
             InitializeComponent();
+            dgwLogs.CellDoubleClick += dgwLogs_CellDoubleClick;
 
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
+
+            this.FormClosed += (s, e) =>
+            {
+                LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
+                LanguageService.LanguageChanged -= UpdateLanguage;
+                timerMailScroll.Stop();
+                timerUsernameScroll2.Stop();
+            };
         }
 
         private void LanguageService_LanguageChanged()
         {
             UpdateFormTexts();
             LoadLoginHistory(LoggedInUser);
+            LoadActivityHistory();
             FillingMethod();
         }
 
@@ -110,16 +118,6 @@ namespace neoStockMasterv2.Forms
             UpdateLanguage();
             DisableUserInputs();
 
-            if (LoggedInUser.Language == "Turkish" || LoggedInUser.Language == "Türkçe")
-            {
-                cmbLanguage.SelectedIndex = 0;
-            }
-            else if (LoggedInUser.Language == "İngilizce" || LoggedInUser.Language == "English")
-            {
-                cmbLanguage.SelectedIndex = 1;
-            }
-
-            //FillingMethod();
             FillCargoCompanies();
             SetUsernameVisibility(false);
             SetMailVisibility(false);
@@ -128,6 +126,16 @@ namespace neoStockMasterv2.Forms
             InitializeUsernameScrollTimer();
 
             rdbCompanies.Checked = true;
+
+            try
+            {
+                LoadActivityHistory();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(LanguageService.T("Etkinlik geçmişi yüklenemedi: ", "Activity history could not be loaded: ") + ex.Message,
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
 
@@ -169,10 +177,8 @@ namespace neoStockMasterv2.Forms
             TimeSpan difference = DateTime.Now.Date - LoggedInUser.RegistrationDate.Date;
             int registeredDays = difference.Days;
             nmrSinceRegistration.Value = registeredDays;
-            LoggedInUser.UsageRemainingDays = registeredDays;
+            nmrRemainingDays.Value = LoggedInUser.DaysLeft;
 
-            // Kalan günleri ve diğer bilgileri doldur
-            nmrRemainingDays.Value = LoggedInUser.RemainingDays;
             txtCargo.Text = LoggedInUser.Cargo;
         }
 
@@ -293,7 +299,7 @@ namespace neoStockMasterv2.Forms
             {
                 cmbCompanies.Enabled = false;
                 cmbCompanies.Items.Clear();
-                cmbCompanies.Items.Add("- Diğer -");
+                cmbCompanies.Items.Add(LanguageService.T("- Diğer -", "- Other -"));
                 cmbCompanies.SelectedIndex = 0;
                 txtCargoOther.Enabled = true;
             }
@@ -305,57 +311,40 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-        private void btnUpdate_Click(object sender, EventArgs e)
+        private async void btnUpdate_Click(object sender, EventArgs e)
         {
-            // Kullanıcı adı ve mevcut şifreyi almak
-            string currentUsername = LoggedInUser.Name; // Mevcut giriş yapan kullanıcının adı
-            string currentPassword = LoggedInUser.Password; // Kullanıcının girdiği mevcut şifre
-            string newPassword = txtPassword.Text; // Kullanıcının girdiği yeni şifre
+            bool tr = LanguageService.CurrentLanguage == "Türkçe";
+            string newPassword = txtPassword.Text.Trim();
 
-            // Eski şifre ile yeni şifre aynı mı kontrolü
-            if (currentPassword == newPassword)
+            if (newPassword.Length < 6)
             {
-                MessageBox.Show("Yeni şifre, mevcut şifreyle aynı olamaz!", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(tr ? "Şifre en az 6 karakter olmalıdır." : "Password must be at least 6 characters.",
+                    tr ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Şifre değiştirme işlemi için kullanıcıdan onay alma
-            DialogResult confirmation = MessageBox.Show("Şifrenizi değiştirmek istediğinize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (confirmation != DialogResult.Yes)
-            {
-                // Kullanıcı "Hayır" dediğinde işlem iptal edilir
+            if (MessageBox.Show(tr ? "Şifrenizi değiştirmek istediğinize emin misiniz?" : "Are you sure you want to change your password?",
+                    tr ? "Onay" : "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
-            }
 
-            // Kullanıcı hizmetinden şifre değiştirme işlemini başlat
-            string result = userService.ChangePassword(currentUsername, currentPassword, newPassword);
+            var (success, message) = userService.ChangePassword(LoggedInUser.Name, newPassword);
+            MessageBox.Show(message, success ? (tr ? "Bilgi" : "Info") : (tr ? "Uyarı" : "Warning"),
+                MessageBoxButtons.OK, success ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            if (!success) return;
 
-            // Sonuç mesajını göstermek
-            MessageBox.Show(result);
-
-            // Eğer şifre başarıyla değiştirildiyse, text boxları temizle
-            if (result == "Şifreniz başarıyla değiştirildi!")
+            btnUpdate.Enabled = false;
+            try
             {
-                try
-                {
-                    // E-posta gönderme işlemi
-                    EmailService emailService = new EmailService(senderEmail, senderPassword);
-                    emailService.SendPasswordChangedEmail(LoggedInUser.Email, LoggedInUser.Name);
-                }
-                catch (Exception ex)
-                {
-                    // E-posta gönderiminde hata oluştuysa kullanıcıyı bilgilendir
-                    MessageBox.Show($"E-posta gönderilirken bir hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-
-                // Kullanıcıyı oturumdan çıkart
-                userService.LogOut();
-
-                Application.Restart();
-
-                this.Close();
+                await new EmailService().SendPasswordChangedEmailAsync(LoggedInUser.Email, LoggedInUser.Name);
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show((tr ? "Bilgilendirme e-postası gönderilemedi: " : "Notification e-mail could not be sent: ") + ex.Message,
+                    tr ? "Hata" : "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            userService.LogOut();
+            Application.Restart();
         }
 
         private void btnCargoClear_Click(object sender, EventArgs e)
@@ -424,40 +413,33 @@ namespace neoStockMasterv2.Forms
             string selectedCargo = "";
 
             if (rdbCompanies.Checked && cmbCompanies.SelectedItem != null)
-            {
                 selectedCargo = cmbCompanies.SelectedItem.ToString();
-            }
             else if (rdbOther.Checked && !string.IsNullOrWhiteSpace(txtCargoOther.Text))
-            {
                 selectedCargo = txtCargoOther.Text.Trim();
-            }
 
             if (string.IsNullOrEmpty(selectedCargo))
             {
-                MessageBox.Show("Lütfen geçerli bir kargo bilgisi girin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(LanguageService.T("Lütfen geçerli bir kargo bilgisi girin.", "Please enter a valid cargo company."),
+                    LanguageService.T("Uyarı", "Warning"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Kullanıcıya değişikliği onaylat
-            DialogResult result = MessageBox.Show("Kargo bilginizi güncellemek istediğinize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (result != DialogResult.Yes)
+            if (MessageBox.Show(LanguageService.T("Kargo bilginizi güncellemek istediğinize emin misiniz?", "Are you sure you want to update your cargo company?"),
+                    LanguageService.T("Onay", "Confirm"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
-            // Kullanıcının kargo bilgisi güncelleniyor
             LoggedInUser.Cargo = selectedCargo;
 
-            // Veritabanı ya da dosya sistemine kayıt
-            bool updateResult = userService.UpdateCargoCompany(LoggedInUser);
-
-            if (updateResult)
+            if (userService.UpdateCargoCompany(LoggedInUser))
             {
-                MessageBox.Show("Kargo bilginiz başarıyla güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(LanguageService.T("Kargo bilginiz başarıyla güncellendi.", "Your cargo company has been updated."),
+                    LanguageService.T("Bilgi", "Info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 txtCargo.Text = selectedCargo;
             }
             else
             {
-                MessageBox.Show("Kargo bilgisi güncellenemedi.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Kargo bilgisi güncellenemedi.", "The cargo company could not be updated."),
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -465,47 +447,42 @@ namespace neoStockMasterv2.Forms
         {
             string selectedLanguage = cmbLanguage.SelectedIndex == 0 ? "Türkçe" : "English";
 
-            DialogResult result = MessageBox.Show(
-                $"Dil tercihinizi \"{selectedLanguage}\" olarak değiştirmek istediğinize emin misiniz?\nUygulama yeniden başlatılacaktır.",
-                "Dil Güncelleme Onayı",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
+            var result = MessageBox.Show(
+                LanguageService.T(
+                    $"Dil tercihinizi \"{selectedLanguage}\" olarak değiştirmek istediğinize emin misiniz?\nUygulama yeniden başlatılacaktır.",
+                    $"Are you sure you want to change your language preference to \"{selectedLanguage}\"?\nThe application will restart."),
+                LanguageService.T("Dil Güncelleme Onayı", "Language Update"),
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
-            if (result == DialogResult.Yes)
+            if (result != DialogResult.Yes) return;
+
+            if (UserService.LoggedInUser == null)
             {
-                if (UserService.LoggedInUser != null)
-                {
-                    // LoggedInUser içindeki dili güncelle
-                    UserService.LoggedInUser.Language = selectedLanguage;
-
-                    // users.json'daki eşleşen kullanıcıyı bulup güncelle
-                    var allUsers = userService.GetAllUsers();
-                    var existingUser = allUsers.FirstOrDefault(u =>
-                        u.Email.Equals(UserService.LoggedInUser.Email, StringComparison.OrdinalIgnoreCase));
-
-                    if (existingUser != null)
-                    {
-                        existingUser.Language = selectedLanguage;
-                        userService.SaveAllUsers(allUsers);
-
-                        MessageBox.Show("Dil tercihiniz güncellendi. Uygulama yeniden başlatılıyor...", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        Application.Restart();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Kullanıcı bulunamadı. Güncelleme başarısız.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Aktif kullanıcı bulunamadı!", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show(LanguageService.T("Aktif kullanıcı bulunamadı!", "No active user found!"),
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-            else
+
+            UserService.LoggedInUser.Language = selectedLanguage;
+
+            var allUsers = userService.GetAllUsers();
+            var existingUser = allUsers.FirstOrDefault(u =>
+                u.Email.Equals(UserService.LoggedInUser.Email, StringComparison.OrdinalIgnoreCase));
+
+            if (existingUser == null)
             {
-                MessageBox.Show("Dil güncelleme işlemi iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(LanguageService.T("Kullanıcı bulunamadı. Güncelleme başarısız.", "User not found. Update failed."),
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+
+            existingUser.Language = selectedLanguage;
+            userService.SaveAllUsers(allUsers);
+            ActivityLogService.Log(ActivityType.LanguageChanged, new Dictionary<string, string> { ["Language"] = selectedLanguage });
+
+            MessageBox.Show(LanguageService.T("Dil tercihiniz güncellendi. Uygulama yeniden başlatılıyor...", "Your language preference has been updated. Restarting..."),
+                LanguageService.T("Başarılı", "Success"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Application.Restart();
         }
 
         private void LoadLoginHistory(User user)
@@ -547,62 +524,139 @@ namespace neoStockMasterv2.Forms
 
         private void btnSerialConfirm_Click(object sender, EventArgs e)
         {
-            string serialKey = txtSerialKey.Text.Trim().ToUpper();
-
-            int daysToAdd = serialKey switch
-            {
-                "TRIAL7" => 7,
-                "FULL30" => 30,
-                "VIP90" => 90,
-                _ => 0
-            };
+            string serialKey = txtSerialKey.Text;
+            int daysToAdd = UserService.GetSerialKeyDays(serialKey);
 
             if (daysToAdd == 0)
             {
-                MessageBox.Show("Geçersiz serial key!", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(LanguageService.T("Geçersiz serial key!", "Invalid serial key!"),
+    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Onay sorusu
-            DialogResult result = MessageBox.Show(
-                $"Bu serial key {daysToAdd} gün ekleyecektir.\nOnaylıyor musunuz?",
-                "Serial Key Onayı",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
-
-            if (result != DialogResult.Yes)
-            {
-                MessageBox.Show("İşlem iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (MessageBox.Show(LanguageService.T($"Bu serial key {daysToAdd} gün ekleyecektir.\nOnaylıyor musunuz?",
+                                                  $"This serial key will add {daysToAdd} days.\nDo you confirm?"),
+                    LanguageService.T("Serial Key Onayı", "Serial Key Confirmation"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
-            }
 
-            // Gün ekle
-            UserService.LoggedInUser.RemainingDays += daysToAdd;
+            var (success, message) = userService.ApplySerialKey(serialKey);
+            MessageBox.Show(message, success ? "Başarılı" : "Hata", MessageBoxButtons.OK,
+                success ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            if (!success) return;
 
-            // Kullanıcıyı JSON dosyasında da güncelle
-            var allUsers = userService.GetAllUsers();
+            nmrRemainingDays.Value = LoggedInUser.DaysLeft;
+            txtSerialKey.Clear();
 
-            var userToUpdate = allUsers.FirstOrDefault(u => u.Email.Equals(UserService.LoggedInUser.Email, StringComparison.OrdinalIgnoreCase));
-            if (userToUpdate != null)
+            if (this.Owner is MainMenu mainMenu)
+                mainMenu.UserAccessControl();
+        }
+
+        // ── Etkinlik Geçmişi ──
+        private static string FormatActivityDate(DateTime date, bool isTurkish) =>
+            isTurkish
+                ? date.ToString("dd.MM.yyyy HH:mm")
+                : date.ToString("MM/dd/yyyy hh:mm tt", new CultureInfo("en-US"));
+
+        private void LoadActivityHistory()
+        {
+            if (LoggedInUser == null) return;
+
+            bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
+            var activities = ActivityLogService.GetForUser(LoggedInUser.Name);
+
+            dgwLogs.Rows.Clear();
+            dgwLogs.Columns.Clear();
+
+            dgwLogs.ReadOnly = true;
+            dgwLogs.AllowUserToAddRows = false;
+            dgwLogs.AllowUserToDeleteRows = false;
+            dgwLogs.AllowUserToResizeRows = false;
+            dgwLogs.RowHeadersVisible = false;
+            dgwLogs.MultiSelect = false;
+            dgwLogs.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+
+            dgwLogs.Columns.Add("Date", isTurkish ? "Tarih" : "Date");
+            dgwLogs.Columns.Add("Activity", isTurkish ? "İşlem" : "Activity");
+            dgwLogs.Columns["Date"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            dgwLogs.Columns["Activity"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+            foreach (var activity in activities)
             {
-                userToUpdate.RemainingDays = UserService.LoggedInUser.RemainingDays;
-                userService.SaveAllUsers(allUsers);
+                int rowIndex = dgwLogs.Rows.Add(
+                    FormatActivityDate(activity.Date, isTurkish),
+                    ActivityText.Summary(activity, isTurkish));
 
-                nmrRemainingDays.Value = UserService.LoggedInUser.RemainingDays;
-
-                MessageBox.Show($"{daysToAdd} gün başarıyla eklendi!\nYeni kalan süreniz: {userToUpdate.RemainingDays} gün", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                // 👉 MainMenu formuna erişim kontrolü tetikle
-                if (this.Owner is MainMenu mainMenu)
-                {
-                    mainMenu.UserAccessControl();
-                }
+                dgwLogs.Rows[rowIndex].Tag = activity;   // çift tıklamada detay için
+                dgwLogs.Rows[rowIndex].Cells["Activity"].ToolTipText = isTurkish
+                    ? "Detaylar için çift tıklayın"
+                    : "Double-click for details";
             }
-            else
+        }
+
+        private void dgwLogs_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;   // başlık satırına tıklandıysa
+
+            if (dgwLogs.Rows[e.RowIndex].Tag is ActivityLog activity)
+                ShowActivityDetails(activity);
+        }
+
+        private void ShowActivityDetails(ActivityLog activity)
+        {
+            bool tr = LanguageService.CurrentLanguage == "Türkçe";
+
+            using var form = new Form
             {
-                MessageBox.Show("Kullanıcı güncellenemedi.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Text = ActivityText.Title(activity.Type, tr),
+                Size = new Size(480, 360),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                TopMost = this.TopMost
+            };
+
+            var lvDetails = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = true,
+                ShowItemToolTips = true,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable
+            };
+            lvDetails.Columns.Add(tr ? "Alan" : "Field", 150);
+            lvDetails.Columns.Add(tr ? "Değer" : "Value", 300);
+
+            void AddRow(string field, string value)
+            {
+                var item = new ListViewItem(field) { ToolTipText = value };
+                item.SubItems.Add(value);
+                lvDetails.Items.Add(item);
             }
+
+            AddRow(tr ? "İşlem" : "Activity", ActivityText.Title(activity.Type, tr));
+            AddRow(tr ? "Tarih" : "Date", FormatActivityDate(activity.Date, tr));
+            AddRow(tr ? "Kullanıcı" : "User", activity.UserName);
+
+            foreach (var entry in activity.Data)
+                AddRow(ActivityText.FieldLabel(entry.Key, tr), entry.Value);
+
+            var btnClose = new Button
+            {
+                Text = tr ? "Kapat" : "Close",
+                Dock = DockStyle.Bottom,
+                Height = 34,
+                DialogResult = DialogResult.OK
+            };
+
+            // Sıra önemli: önce Fill, sonra Bottom eklenir
+            form.Controls.Add(lvDetails);
+            form.Controls.Add(btnClose);
+            form.AcceptButton = btnClose;
+
+            form.ShowDialog(this);
         }
     }
     

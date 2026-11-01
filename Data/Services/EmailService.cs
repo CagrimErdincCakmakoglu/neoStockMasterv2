@@ -1,394 +1,208 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Net;
 using System.Net.Mail;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using OfficeOpenXml;
-using OfficeOpenXml.Table; // EPPlus tablolar için
-using System.IO;
 
 namespace neoStockMasterv2.Data.Services
 {
     public class EmailService
     {
-        private readonly OrderService _orderService;
-        private readonly UserService _userService;
-        private readonly string smtpClientAddress = "smtp.gmail.com";
-        private readonly int smtpPort = 587;
-        private readonly string senderEmail = "stockmasterapp@gmail.com";
-        private readonly string senderPassword = "shhu hvks hkfe aoec";
+        private readonly MailConfig _config = MailConfig.Current;
 
-        public EmailService(string email, string password)
+        // ── Ortak yardımcılar ──
+        private MailMessage CreateMessage(string to, string subject, string body)
         {
-            senderEmail = email;
-            senderPassword = password;
-            _orderService = new OrderService();
-            _userService = new UserService();
+            var message = new MailMessage
+            {
+                From = new MailAddress(_config.SenderEmail, "StockMaster"),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = false
+            };
+            message.To.Add(new MailAddress(to));
+            return message;
         }
 
-        public void SendWelcomeEmail(string recipientEmail, string recipientName, string verificationCode)
+        private async Task SendAsync(MailMessage message)
         {
-            try
+            using var smtp = new SmtpClient(_config.SmtpHost, _config.SmtpPort)
             {
-                MailMessage mailMessage = new MailMessage
-                {
-                    From = new MailAddress(senderEmail, "StockMaster"),
-                    Subject = "Hoş Geldiniz!",
-                    Body = $"Merhaba {recipientName},\n\n" +
-                           $"Uygulamaya kayıt olduğunuz için teşekkür ederiz! Sizleri aramızda görmekten mutluluk duyuyoruz.\n\n" +
-                           $"Hesabınızı doğrulamak için aşağıdaki onay kodunu kullanabilirsiniz:\n\n" +
-                           $"**{verificationCode}**\n\n" +
-                           $"Bu kodu kullanarak hesabınızı aktif hale getirebilirsiniz.\n\n" +
-                           $"En iyi dileklerimle,\n\n[Stock Master]",
-                    IsBodyHtml = false // HTML içeriği kullanacaksanız true yapın
-                };
-                mailMessage.To.Add(new MailAddress(recipientEmail));
-
-                // SMTP istemcisi ayarları
-                using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587)
-                {
-                    Credentials = new NetworkCredential(senderEmail, senderPassword),
-                    EnableSsl = true
-                })
-                {
-                    smtpClient.Send(mailMessage);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"E-posta gönderme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+                Credentials = new NetworkCredential(_config.SenderEmail, _config.AppPassword),
+                EnableSsl = true
+            };
+            await smtp.SendMailAsync(message);
         }
 
-
-
-        public void SendForgotPasswordEmail(string recipientEmail, string userPassword)
+        // ── Kullanıcı mailleri ──
+        public async Task SendWelcomeEmailAsync(string recipientEmail, string recipientName, string verificationCode)
         {
-            try
-            {
-                MailMessage mailMessage = new MailMessage
-                {
-                    From = new MailAddress(senderEmail, "StockMaster"),
-                    Subject = "Şifre Hatırlatma",
-                    Body = $"Merhaba,\n\nUnuttuğunuz şifreniz: {userPassword}\n\nGüvenliğiniz için bu şifreyi kimseyle paylaşmayın.",
-                    IsBodyHtml = false
-                };
-                mailMessage.To.Add(new MailAddress(recipientEmail));
+            string body = $"Merhaba {recipientName},\n\n" +
+                          "Uygulamaya kayıt olduğunuz için teşekkür ederiz! Sizleri aramızda görmekten mutluluk duyuyoruz.\n\n" +
+                          "Hesabınızı doğrulamak için aşağıdaki onay kodunu kullanabilirsiniz:\n\n" +
+                          $"{verificationCode}\n\n" +
+                          "Bu kodu kullanarak hesabınızı aktif hale getirebilirsiniz.\n\n" +
+                          "En iyi dileklerimle,\n\n[Stock Master]";
 
-                using (SmtpClient smtpClient = new SmtpClient(smtpClientAddress, smtpPort)
-                {
-                    Credentials = new NetworkCredential(senderEmail, senderPassword),
-                    EnableSsl = true
-                })
-                {
-                    smtpClient.Send(mailMessage);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"E-posta gönderme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            using var message = CreateMessage(recipientEmail, "Hoş Geldiniz!", body);
+            await SendAsync(message);
         }
 
-
-
-
-        public void SendForgotUsernameEmail(string recipientEmail, string username)
+        public async Task SendTemporaryPasswordEmailAsync(string recipientEmail, string temporaryPassword)
         {
-            try
-            {
-                MailMessage mailMessage = new MailMessage
-                {
-                    From = new MailAddress(senderEmail, "StockMaster"),
-                    Subject = "Kullanıcı Adı Hatırlatma",
-                    Body = $"Merhaba,\n\nKullanıcı adınız: {username}\n\nİyi günler dileriz!",
-                    IsBodyHtml = false
-                };
-                mailMessage.To.Add(new MailAddress(recipientEmail));
+            string body = "Merhaba,\n\n" +
+                          $"Şifre sıfırlama talebiniz alındı. Geçici şifreniz: {temporaryPassword}\n\n" +
+                          "Giriş yaptıktan sonra Kullanıcı Bilgileri ekranından şifrenizi değiştirin.\n" +
+                          "Bu talebi siz yapmadıysanız lütfen bizimle iletişime geçin.";
 
-                using (SmtpClient smtpClient = new SmtpClient(smtpClientAddress, smtpPort)
-                {
-                    Credentials = new NetworkCredential(senderEmail, senderPassword),
-                    EnableSsl = true
-                })
-                {
-                    smtpClient.Send(mailMessage);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"E-posta gönderme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            using var message = CreateMessage(recipientEmail, "Şifre Sıfırlama", body);
+            await SendAsync(message);
         }
 
-
-        public void SendPasswordChangedEmail(string recipientEmail, string recipientName)
+        public async Task SendForgotUsernameEmailAsync(string recipientEmail, string username)
         {
-            try
-            {
-                // Mail mesajı oluşturma
-                MailMessage mailMessage = new MailMessage
-                {
-                    From = new MailAddress(senderEmail),
-                    Subject = "Şifre Değişikliği Bilgilendirmesi",
-                    Body = $"Merhaba {recipientName},\n\nŞifreniz başarıyla değiştirilmiştir. Eğer bu işlemi siz yapmadıysanız, lütfen hemen bizimle iletişime geçin.\n\nEn iyi dileklerimle,\n\n[Stock Master]",
-                    IsBodyHtml = false // HTML içeriği kullanacaksanız true yapın
-                };
-                mailMessage.To.Add(new MailAddress(recipientEmail));
+            string body = $"Merhaba,\n\nKullanıcı adınız: {username}\n\nİyi günler dileriz!";
 
-                // SMTP istemcisi ayarları
-                using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587)
-                {
-                    Credentials = new NetworkCredential(senderEmail, senderPassword),
-                    EnableSsl = true
-                })
-                {
-                    // Mail gönderme
-                    smtpClient.Send(mailMessage);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"E-posta gönderme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            using var message = CreateMessage(recipientEmail, "Kullanıcı Adı Hatırlatma", body);
+            await SendAsync(message);
         }
 
-        public void SendOrderWithExcelAttachment(
-    string recipientEmail,
-    string recipientName,
-    decimal totalAmount,
-    DataGridView dgwOrderDetails,
-    ListView lwDisc,
-    ListView lwTotal,
-    ListView lwDiscList,
-    ListView lwTax,
-    ComboBox cmbDisc,
-    NumericUpDown nmrDisc,
-    ComboBox cmbSCT,
-    ComboBox cmbVAT,
-    NumericUpDown nmrCargo,
-    TextBox txtCustomerName,
-    MaskedTextBox mskPhoneNo,
-    DateTime createdDate,
-    string userLanguage,
-    string userPassword
-)
+        public async Task SendPasswordChangedEmailAsync(string recipientEmail, string recipientName)
         {
-            try
-            {
-                bool isTurkish = userLanguage?.Equals("Türkçe", StringComparison.OrdinalIgnoreCase) ?? true;
+            string body = $"Merhaba {recipientName},\n\n" +
+                          "Şifreniz başarıyla değiştirilmiştir. Eğer bu işlemi siz yapmadıysanız, lütfen hemen bizimle iletişime geçin.\n\n" +
+                          "En iyi dileklerimle,\n\n[Stock Master]";
 
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-                using (var package = new ExcelPackage())
-                {
-                    // === Sipariş İçeriği ===
-                    var wsOrderDetails = package.Workbook.Worksheets.Add(isTurkish ? "Sipariş İçeriği" : "Order Content");
-                    ExportDataGridViewToWorksheet(dgwOrderDetails, wsOrderDetails);
-
-                    // === İndirim Tablosu ===
-                    var wsDisc = package.Workbook.Worksheets.Add(isTurkish ? "İndirim Tablosu" : "Discount Table");
-                    ExportListViewToWorksheet(lwDisc, wsDisc);
-
-                    // === Toplam Tutar ===
-                    var wsTotal = package.Workbook.Worksheets.Add(isTurkish ? "Toplam Tutar" : "Total Amount");
-                    ExportListViewToWorksheet(lwTotal, wsTotal);
-
-                    // === Ek İndirim ===
-                    var wsDiscList = package.Workbook.Worksheets.Add(isTurkish ? "Ek İndirim" : "Extra Discount");
-                    ExportListViewToWorksheet(lwDiscList, wsDiscList);
-
-                    // === Vergiler ===
-                    var wsTax = package.Workbook.Worksheets.Add(isTurkish ? "Vergiler" : "Taxes");
-                    ExportListViewToWorksheet(lwTax, wsTax);
-
-                    // === Bilgiler ===
-                    var wsInfo = package.Workbook.Worksheets.Add(isTurkish ? "Bilgiler" : "Info");
-                    wsInfo.Cells[1, 1].Value = isTurkish ? "Müşteri Adı" : "Customer Name";
-                    wsInfo.Cells[1, 2].Value = txtCustomerName.Text;
-
-                    wsInfo.Cells[2, 1].Value = isTurkish ? "Telefon" : "Phone";
-                    wsInfo.Cells[2, 2].Value = mskPhoneNo.Text;
-
-                    // İndirim satırı
-                    string discountText = cmbDisc.Text;
-                    if (nmrDisc.Value > 0)
-                        discountText += $" +{nmrDisc.Value}";
-                    wsInfo.Cells[3, 1].Value = isTurkish ? "İndirim" : "Discount";
-                    wsInfo.Cells[3, 2].Value = discountText;
-
-                    wsInfo.Cells[4, 1].Value = isTurkish ? "ÖTV" : "SCT";
-                    wsInfo.Cells[4, 2].Value = cmbSCT.Text;
-
-                    wsInfo.Cells[5, 1].Value = isTurkish ? "KDV" : "VAT";
-                    wsInfo.Cells[5, 2].Value = cmbVAT.Text;
-
-                    wsInfo.Cells[6, 1].Value = isTurkish ? "Kargo" : "Cargo";
-                    wsInfo.Cells[6, 2].Value = nmrCargo.Value;
-
-                    wsInfo.Cells[7, 1].Value = isTurkish ? "Oluşturulma Tarihi" : "Created Date";
-                    wsInfo.Cells[7, 2].Value = createdDate.ToString("dd.MM.yyyy HH:mm");
-
-                    // === Otomatik kolon genişliği + hücre koruma ===
-                    foreach (var ws in package.Workbook.Worksheets)
-                    {
-                        if (ws.Dimension != null)
-                        {
-                            // Kolon genişliği
-                            ws.Cells[ws.Dimension.Address].AutoFitColumns();
-                            for (int col = ws.Dimension.Start.Column; col <= ws.Dimension.End.Column; col++)
-                                ws.Column(col).BestFit = true;
-
-                            // Tüm hücreleri kilitle
-                            ws.Cells[ws.Dimension.Address].Style.Locked = true;
-
-                            // Sayfa koruması
-                            ws.Protection.IsProtected = true;
-                            ws.Protection.SetPassword(userPassword);
-
-                            // Kullanıcıya sadece okuma ve seçim izni ver
-                            ws.Protection.AllowSelectLockedCells = true;
-                            ws.Protection.AllowSelectUnlockedCells = true;
-                            ws.Protection.AllowEditObject = false;
-                            ws.Protection.AllowEditScenarios = false;
-                            ws.Protection.AllowFormatCells = false;
-                            ws.Protection.AllowFormatColumns = false;
-                            ws.Protection.AllowFormatRows = false;
-                            ws.Protection.AllowInsertColumns = false;
-                            ws.Protection.AllowInsertRows = false;
-                            ws.Protection.AllowDeleteColumns = false;
-                            ws.Protection.AllowDeleteRows = false;
-                        }
-                    }
-
-                    // === Workbook koruması (sayfa ekleme/silme engeli) ===
-                    package.Workbook.Protection.SetPassword(userPassword);
-                    package.Workbook.Protection.LockStructure = true;
-
-                    // Belleğe kaydet
-                    using (var stream = new MemoryStream())
-                    {
-                        package.SaveAs(stream);
-                        stream.Position = 0;
-
-                        // === Mail başlığı ===
-                        string subject = isTurkish
-                            ? $"{txtCustomerName.Text} Siparişi Alındı!"
-                            : $"{txtCustomerName.Text} Order Received!";
-
-                        // === Mail gövdesi (lwTotal’den dinamik) ===
-                        List<string> amounts = new List<string>();
-                        foreach (ListViewItem item in lwTotal.Items)
-                        {
-                            if (item.SubItems.Count >= 2)
-                            {
-                                string currency = item.SubItems[0].Text;
-                                string value = item.SubItems[1].Text;
-
-                                if (!string.IsNullOrWhiteSpace(currency) && !string.IsNullOrWhiteSpace(value))
-                                {
-                                    amounts.Add($"{value} {currency}");
-                                }
-                            }
-                        }
-
-                        string joinedAmounts = "";
-                        if (amounts.Count == 1)
-                        {
-                            joinedAmounts = amounts[0];
-                        }
-                        else if (amounts.Count == 2)
-                        {
-                            joinedAmounts = $"{amounts[0]} ve {amounts[1]}";
-                        }
-                        else if (amounts.Count > 2)
-                        {
-                            joinedAmounts = string.Join(", ", amounts.Take(amounts.Count - 1))
-                                            + " ve " + amounts.Last();
-                        }
-
-                        string body = isTurkish
-                            ? $"Merhaba {recipientName},\n\n{joinedAmounts} tutarındaki siparişiniz sisteme kayıt edilmiştir."
-                            : $"Hello {recipientName},\n\nYour order of {joinedAmounts} has been recorded in the system.";
-
-                        // === Mail oluşturma ===
-                        MailMessage mailMessage = new MailMessage
-                        {
-                            From = new MailAddress(senderEmail, "StockMaster"),
-                            Subject = subject,
-                            Body = body,
-                            IsBodyHtml = false
-                        };
-                        mailMessage.To.Add(new MailAddress(recipientEmail));
-
-                        // Excel dosya adı
-                        string excelName = isTurkish
-                            ? $"{txtCustomerName.Text} Sipariş Detayları.xlsx"
-                            : $"{txtCustomerName.Text} Order Details.xlsx";
-
-                        mailMessage.Attachments.Add(new Attachment(stream, excelName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-
-                        using (SmtpClient smtpClient = new SmtpClient(smtpClientAddress, smtpPort)
-                        {
-                            Credentials = new NetworkCredential(senderEmail, senderPassword),
-                            EnableSsl = true
-                        })
-                        {
-                            smtpClient.Send(mailMessage);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"E-posta gönderme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            using var message = CreateMessage(recipientEmail, "Şifre Değişikliği Bilgilendirmesi", body);
+            await SendAsync(message);
         }
 
-
-        // --- Yardımcılar ---
-        private void ExportDataGridViewToWorksheet(DataGridView dgv, ExcelWorksheet ws)
+        // ── Sipariş maili (Excel ekli) ──
+        public async Task SendOrderWithExcelAttachmentAsync(
+            string recipientEmail,
+            string recipientName,
+            DataGridView dgwOrderDetails,
+            ListView lwDisc,
+            ListView lwTotal,
+            ListView lwDiscList,
+            ListView lwTax,
+            ComboBox cmbDisc,
+            NumericUpDown nmrDisc,
+            ComboBox cmbSCT,
+            ComboBox cmbVAT,
+            NumericUpDown nmrCargo,
+            TextBox txtCustomerName,
+            MaskedTextBox mskPhoneNo,
+            DateTime createdDate,
+            string userLanguage)
         {
-            int col = 1;
-            foreach (DataGridViewColumn column in dgv.Columns)
+            bool isTurkish = userLanguage?.Equals("Türkçe", StringComparison.OrdinalIgnoreCase) ?? true;
+            string customerName = txtCustomerName.Text;
+
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            using var package = new ExcelPackage();
+
+            ExportDataGridViewToWorksheet(dgwOrderDetails, package.Workbook.Worksheets.Add(isTurkish ? "Sipariş İçeriği" : "Order Content"));
+            ExportListViewToWorksheet(lwDisc, package.Workbook.Worksheets.Add(isTurkish ? "İndirim Tablosu" : "Discount Table"));
+            ExportListViewToWorksheet(lwTotal, package.Workbook.Worksheets.Add(isTurkish ? "Toplam Tutar" : "Total Amount"));
+            ExportListViewToWorksheet(lwDiscList, package.Workbook.Worksheets.Add(isTurkish ? "Ek İndirim" : "Extra Discount"));
+            ExportListViewToWorksheet(lwTax, package.Workbook.Worksheets.Add(isTurkish ? "Vergiler" : "Taxes"));
+
+            var wsInfo = package.Workbook.Worksheets.Add(isTurkish ? "Bilgiler" : "Info");
+            string discountText = cmbDisc.Text + (nmrDisc.Value > 0 ? $" +{nmrDisc.Value}" : "");
+            object[,] info =
             {
-                ws.Cells[1, col].Value = column.HeaderText;
-                col++;
+                { isTurkish ? "Müşteri Adı" : "Customer Name", customerName },
+                { isTurkish ? "Telefon" : "Phone", mskPhoneNo.Text },
+                { isTurkish ? "İndirim" : "Discount", discountText },
+                { isTurkish ? "ÖTV" : "SCT", cmbSCT.Text },
+                { isTurkish ? "KDV" : "VAT", cmbVAT.Text },
+                { isTurkish ? "Kargo" : "Cargo", nmrCargo.Value },
+                { isTurkish ? "Oluşturulma Tarihi" : "Created Date", createdDate.ToString("dd.MM.yyyy HH:mm") }
+            };
+            for (int r = 0; r < info.GetLength(0); r++)
+            {
+                wsInfo.Cells[r + 1, 1].Value = info[r, 0];
+                wsInfo.Cells[r + 1, 2].Value = info[r, 1];
             }
+
+            // Sayfaları rastgele bir parolayla kilitle (kullanıcının giriş şifresi ASLA kullanılmaz)
+            string protectionPassword = Guid.NewGuid().ToString("N");
+            foreach (var ws in package.Workbook.Worksheets)
+            {
+                if (ws.Dimension == null) continue;
+                ws.Cells[ws.Dimension.Address].AutoFitColumns();
+                ws.Cells[ws.Dimension.Address].Style.Locked = true;
+                ws.Protection.IsProtected = true;
+                ws.Protection.SetPassword(protectionPassword);
+                ws.Protection.AllowSelectLockedCells = true;
+                ws.Protection.AllowSelectUnlockedCells = true;
+            }
+            package.Workbook.Protection.SetPassword(protectionPassword);
+            package.Workbook.Protection.LockStructure = true;
+
+            // Mail gövdesi: lwTotal'daki tutarlar
+            var amounts = lwTotal.Items.Cast<ListViewItem>()
+                .Where(i => i.SubItems.Count >= 2 && !string.IsNullOrWhiteSpace(i.SubItems[0].Text) && !string.IsNullOrWhiteSpace(i.SubItems[1].Text))
+                .Select(i => $"{i.SubItems[1].Text} {i.SubItems[0].Text}")
+                .ToList();
+
+            string joiner = isTurkish ? " ve " : " and ";
+            string joinedAmounts = amounts.Count <= 1
+                ? string.Join("", amounts)
+                : string.Join(", ", amounts.Take(amounts.Count - 1)) + joiner + amounts.Last();
+
+            string subject = isTurkish ? $"{customerName} Siparişi Alındı!" : $"{customerName} Order Received!";
+            string body = isTurkish
+                ? $"Merhaba {recipientName},\n\n{joinedAmounts} tutarındaki siparişiniz sisteme kayıt edilmiştir."
+                : $"Hello {recipientName},\n\nYour order of {joinedAmounts} has been recorded in the system.";
+            string excelName = isTurkish ? $"{customerName} Sipariş Detayları.xlsx" : $"{customerName} Order Details.xlsx";
+
+            using var stream = new MemoryStream();
+            package.SaveAs(stream);
+            stream.Position = 0;
+
+            using var message = CreateMessage(recipientEmail, subject, body);
+            message.Attachments.Add(new Attachment(stream, excelName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            await SendAsync(message);
+        }
+
+        private static void ExportDataGridViewToWorksheet(DataGridView dgv, ExcelWorksheet ws)
+        {
+            for (int c = 0; c < dgv.Columns.Count; c++)
+                ws.Cells[1, c + 1].Value = dgv.Columns[c].HeaderText;
 
             int row = 2;
             foreach (DataGridViewRow dgRow in dgv.Rows)
             {
                 if (dgRow.IsNewRow) continue;
-                for (int i = 0; i < dgv.Columns.Count; i++)
-                {
-                    ws.Cells[row, i + 1].Value = dgRow.Cells[i].Value?.ToString();
-                }
+                for (int c = 0; c < dgv.Columns.Count; c++)
+                    ws.Cells[row, c + 1].Value = dgRow.Cells[c].Value?.ToString();
                 row++;
             }
-
-            ws.Cells[ws.Dimension.Address].AutoFitColumns();
         }
 
-        private void ExportListViewToWorksheet(ListView lv, ExcelWorksheet ws)
+        private static void ExportListViewToWorksheet(ListView lv, ExcelWorksheet ws)
         {
-            for (int i = 0; i < lv.Columns.Count; i++)
-            {
-                ws.Cells[1, i + 1].Value = lv.Columns[i].Text;
-            }
+            for (int c = 0; c < lv.Columns.Count; c++)
+                ws.Cells[1, c + 1].Value = lv.Columns[c].Text;
 
             for (int i = 0; i < lv.Items.Count; i++)
-            {
-                var item = lv.Items[i];
-                for (int j = 0; j < item.SubItems.Count; j++)
-                {
-                    ws.Cells[i + 2, j + 1].Value = item.SubItems[j].Text;
-                }
-            }
+                for (int j = 0; j < lv.Items[i].SubItems.Count; j++)
+                    ws.Cells[i + 2, j + 1].Value = lv.Items[i].SubItems[j].Text;
+        }
 
-            ws.Cells[ws.Dimension.Address].AutoFitColumns();
+        public async Task SendExcelPasswordEmailAsync(string recipientEmail, string recipientName, string fileName, string password)
+        {
+            string body = $"Merhaba {recipientName},\n\n" +
+                          "StockMaster'dan bir Excel dosyası dışa aktarıldı.\n\n" +
+                          $"Dosya adı: {fileName}\n" +
+                          $"Tarih: {DateTime.Now:dd.MM.yyyy HH:mm}\n" +
+                          $"Kilit şifresi: {password}\n\n" +
+                          "Kilidi açmak için Excel'de: Gözden Geçir → Sayfa Korumasını Kaldır → bu şifreyi girin.\n\n" +
+                          "Bu işlemi siz yapmadıysanız lütfen kontrol edin.\n\n[Stock Master]";
+
+            using var message = CreateMessage(recipientEmail, $"Excel Şifresi: {fileName}", body);
+            await SendAsync(message);
         }
     }
 }

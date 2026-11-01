@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using neoStockMasterv2.Data.Entities;
+﻿using neoStockMasterv2.Data.Entities;
 using neoStockMasterv2.Data.Services;
 using System;
 using System.Collections.Generic;
@@ -19,6 +18,7 @@ namespace neoStockMasterv2.Forms
     {
         private List<DataGridViewRow> savedRows = new List<DataGridViewRow>();
         int previousValue = 1;
+        private List<Product> _tableProducts = new List<Product>();
 
         public CompareScreen(string selectedLanguage)
         {
@@ -26,6 +26,8 @@ namespace neoStockMasterv2.Forms
 
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
+
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
         }
 
         private void LanguageService_LanguageChanged()
@@ -111,7 +113,7 @@ namespace neoStockMasterv2.Forms
 
             if (products.Count == 0)
             {
-                MessageBox.Show("Ürün bulunamadı!");
+                MessageBox.Show(LanguageService.T("Ürün bulunamadı!", "No products found!"));
                 return;
             }
 
@@ -167,41 +169,12 @@ namespace neoStockMasterv2.Forms
                 dgwTable.Rows.Add();
             }
 
-
-            // 10. Event'leri ayarla
-            dgwTable.CurrentCellDirtyStateChanged += (sender, e) =>
-            {
-                if (dgwTable.CurrentCell is DataGridViewComboBoxCell)
-                {
-                    dgwTable.CommitEdit(DataGridViewDataErrorContexts.Commit);
-                }
-            };
-
-            dgwTable.CellValueChanged += (sender, e) =>
-            {
-                if (e.ColumnIndex == 0 && e.RowIndex >= 0)
-                {
-                    var selectedValue = dgwTable.Rows[e.RowIndex].Cells[0].Value;
-                    if (selectedValue != null)
-                    {
-                        var selectedProduct = products.FirstOrDefault(p => p.ID.ToString() == selectedValue.ToString());
-                        if (selectedProduct != null)
-                        {
-                            dgwTable.Rows[e.RowIndex].Cells["Cost"].Value = selectedProduct.Cost;
-                            dgwTable.Rows[e.RowIndex].Cells["Currency"].Value = selectedProduct.CostCurrency;
-                            dgwTable.Rows[e.RowIndex].Cells["Price"].Value = selectedProduct.Price;
-                            dgwTable.Rows[e.RowIndex].Cells["PriceCurrency"].Value = selectedProduct.PriceCurrency;
-                            dgwTable.Rows[e.RowIndex].Cells["Stock"].Value = selectedProduct.Stock;
-                            dgwTable.Rows[e.RowIndex].Cells["AddedDate"].Value = isEnglish
-                                 ? selectedProduct.DateAdded.ToString("MM/dd/yyyy hh:mm tt", new CultureInfo("en-US"))
-                                 : selectedProduct.DateAdded.ToString("dd.MM.yyyy HH:mm", new CultureInfo("tr-TR"));
-
-                            UpdateComboBoxes(products);
-                        }
-                    }
-                }
-
-            };
+            // 10. Event'leri ayarla (önce çıkar, sonra bağla → birikmez)
+            _tableProducts = products;
+            dgwTable.CurrentCellDirtyStateChanged -= DgwTable_CurrentCellDirtyStateChanged;
+            dgwTable.CurrentCellDirtyStateChanged += DgwTable_CurrentCellDirtyStateChanged;
+            dgwTable.CellValueChanged -= DgwTable_CellValueChanged;
+            dgwTable.CellValueChanged += DgwTable_CellValueChanged;
 
             // 11. Görsel ayarlar
             dgwTable.RowHeadersVisible = false;
@@ -209,6 +182,36 @@ namespace neoStockMasterv2.Forms
             dgwTable.ColumnHeadersDefaultCellStyle.BackColor = Color.LightGray;
 
             UpdateComboBoxes(products);
+        }
+
+        private void DgwTable_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+        {
+            if (dgwTable.CurrentCell is DataGridViewComboBoxCell)
+                dgwTable.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        }
+
+        private void DgwTable_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex != 0 || e.RowIndex < 0) return;
+
+            var selectedValue = dgwTable.Rows[e.RowIndex].Cells[0].Value;
+            if (selectedValue == null) return;
+
+            var p = _tableProducts.FirstOrDefault(x => x.ID.ToString() == selectedValue.ToString());
+            if (p == null) return;
+
+            bool isEnglish = LanguageService.CurrentLanguage == "English";
+            var row = dgwTable.Rows[e.RowIndex];
+            row.Cells["Cost"].Value = p.Cost;
+            row.Cells["Currency"].Value = p.CostCurrency;
+            row.Cells["Price"].Value = p.Price;
+            row.Cells["PriceCurrency"].Value = p.PriceCurrency;
+            row.Cells["Stock"].Value = p.Stock;
+            row.Cells["AddedDate"].Value = isEnglish
+                ? p.DateAdded.ToString("MM/dd/yyyy hh:mm tt", new CultureInfo("en-US"))
+                : p.DateAdded.ToString("dd.MM.yyyy HH:mm", new CultureInfo("tr-TR"));
+
+            UpdateComboBoxes(_tableProducts);
         }
 
         private void UpdateAllDateFormats()

@@ -61,6 +61,13 @@ namespace neoStockMasterv2.Forms
 
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
+
+            // Kolon genişliği değişimini engelle (PricingOrderScreen'deki gibi)
+            lwDisc.ColumnWidthChanging += (s, e) =>
+            {
+                e.Cancel = true;
+                e.NewWidth = lwDisc.Columns[e.ColumnIndex].Width;
+            };
         }
 
         private void LanguageService_LanguageChanged()
@@ -475,7 +482,7 @@ namespace neoStockMasterv2.Forms
         "Arjantin Pesosu", "Azerbaycan Manatı", "Bosna-Hersek Markı", "Bulgar Levası", "Bahreyn Dinarı", "Brezilya Reali", "Belarus Rublesi",
         "Şili Pesosu", "Çin Yuanı", "Kolombiya Pesosu", "Kosta Rika Kolonu", "Çek Korunası", "Sepet Kur", "Cezayir Dinarı", "Mısır Lirası",
         "Gürcistan Larisi", "Hong Kong Doları", "Hırvat Kunası", "Macar Forinti", "Endonezya Rupiahi", "İsrail Şekeli", "Hindistan Rupisi",
-        "Irak Dinarı", "İran Riyali", "İzlanda Kronası", "Ürdün Dinarı", "Güney Kore Wonu", "Kazan Tengesi", "Lübnan Lirası", "Sri Lanka Rupisi",
+        "Irak Dinarı", "İran Riyali", "İzlanda Kronası", "Ürdün Dinarı", "Güney Kore Wonu", "Kazak Tengesi", "Lübnan Lirası", "Sri Lanka Rupisi",
         "Litvanya Litası", "Letonya Latsı", "Libya Dinarı", "Fas Dirhemi", "Moldovya Leusu", "Makedon Dinarı", "Meksika Pesosu", "Malezya Ringgiti",
         "Yeni Zelanda Doları", "Umman Riyali", "Peru İnti", "Filipinler Pesosu", "Pakistan Rupisi", "Polonya Zlotisi", "Katar Riyali",
         "Romanya Leyi", "Sırbistan Dinarı", "Suudi Arabistan Riyali", "Singapur Doları", "Suriye Lirası", "Tayland Bahtı", "Tunus Dinarı",
@@ -546,12 +553,7 @@ namespace neoStockMasterv2.Forms
                 lwDisc.Columns.Add("VAT Status", 96);
             }
 
-            // Kolon genişliği değişimini engelle (PricingOrderScreen'deki gibi)
-            lwDisc.ColumnWidthChanging += (s, e) =>
-            {
-                e.Cancel = true;
-                e.NewWidth = lwDisc.Columns[e.ColumnIndex].Width;
-            };
+
 
             // Satıra tıklanınca checkbox toggle + kontrol erişimi güncelle
             lwDisc.MouseClick -= lwDisc_MouseClick;
@@ -2219,13 +2221,6 @@ namespace neoStockMasterv2.Forms
             {
                 info.Item.Checked = !info.Item.Checked;
             }
-        }
-
-        // lwDisc_ItemCheck artık InitializeLwDisc'te bağlanmıyor.
-        // Çift tetiklenmeyi önlemek için devre dışı bırakıldı; yalnızca lwDisc_ItemChecked kullanılır.
-        private void lwDisc_ItemCheck(object sender, ItemCheckEventArgs e)
-        {
-            // Kasıtlı olarak boş bırakıldı.
         }
 
         private void lwDisc_ItemChecked(object sender, ItemCheckedEventArgs e)

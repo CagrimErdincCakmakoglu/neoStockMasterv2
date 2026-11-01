@@ -529,4 +529,55 @@ In no event shall the developer be liable for any special, incidental, indirect,
   <data name="Fiyat Analizi" xml:space="preserve">
     <value>Price Analysis</value>
   </data>
+  <data name="Bize Ulaşın" xml:space="preserve">
+    <value>Contact Us</value>
+  </data>
+  <data name="Mail Gönder" xml:space="preserve">
+    <value>Send Email</value>
+  </data>
+  <data name="Bizi Arayın" xml:space="preserve">
+    <value>Call Us</value>
+  </data>
+  <data name="Whatsapp ile" xml:space="preserve">
+    <value>Via WhatsApp</value>
+  </data>
+  <data name="Çağrı Başlat" xml:space="preserve">
+    <value>Call via Phone Line</value>
+  </data>
+  <data name="Teknik Destek" xml:space="preserve">
+    <value>Technical Support</value>
+  </data>
+  <data name="Hata Bildirimi" xml:space="preserve">
+    <value>Bug Report</value>
+  </data>
+  <data name="Abonelik ve Ödeme" xml:space="preserve">
+    <value>Subscription and Payment</value>
+  </data>
+  <data name="Fiyat Teklifi" xml:space="preserve">
+    <value>Price Quote</value>
+  </data>
+  <data name="Şikayet" xml:space="preserve">
+    <value>Complaint</value>
+  </data>
+  <data name="Öneri" xml:space="preserve">
+    <value>Suggestion</value>
+  </data>
+  <data name="Genel İletişim" xml:space="preserve">
+    <value>General Contact</value>
+  </data>
+  <data name="Hesap Bilgi Değişimi" xml:space="preserve">
+    <value>Account Information Change</value>
+  </data>
+  <data name="Teknik" xml:space="preserve">
+    <value>Technical</value>
+  </data>
+  <data name="Satış ve Hesap" xml:space="preserve">
+    <value>Sales and Account</value>
+  </data>
+  <data name="Geri Bildirim" xml:space="preserve">
+    <value>Feedback</value>
+  </data>
+  <data name="Teşekkür" xml:space="preserve">
+    <value>Thank You</value>
+  </data>
 </root>

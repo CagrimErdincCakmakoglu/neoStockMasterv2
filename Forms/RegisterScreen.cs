@@ -15,13 +15,26 @@ namespace neoStockMasterv2.Forms
     public partial class RegisterScreen : Form
     {
         private string selectedLanguage;
-        private EmailService emailService;
         private UserService _userService;
-        public string enteredUserName = "";
+        private CheckBox chbShowPassword;
+        private readonly ToolTip _ttPassword = new ToolTip();
 
         public RegisterScreen(string selectedLanguage)
         {
             InitializeComponent();
+
+            // Şifre gizli başlasın + göster/gizle kutusu
+            txtPassword.UseSystemPasswordChar = true;
+            txtPassword.Width = 180;
+
+            chbShowPassword = new CheckBox
+            {
+                AutoSize = true,
+                Location = new Point(txtPassword.Right + 6, txtPassword.Top + 4)
+            };
+            chbShowPassword.CheckedChanged += (s, e) =>
+                txtPassword.UseSystemPasswordChar = !chbShowPassword.Checked;
+            grbUserInfo.Controls.Add(chbShowPassword);
 
             this.selectedLanguage = selectedLanguage;
 
@@ -32,9 +45,9 @@ namespace neoStockMasterv2.Forms
 
 
             LanguageService.LanguageChanged += UpdateLanguage;
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= UpdateLanguage;
             UpdateLanguage();
 
-            emailService = new EmailService("stockmasterapp@gmail.com", "bfbi cpom gikz azjx");
             _userService = new UserService();
         }
 
@@ -53,9 +66,10 @@ namespace neoStockMasterv2.Forms
             btnVerificationConfirm.Text = LanguageService.GetString("Onayla");
             lblVerificationName.Text = LanguageService.GetString("İsim");
             llContract.Text = LanguageService.GetString("Kullanıcı Sözleşmesini okudum, kabul ediyorum.");
-            LanguageService.GetString("UserAgreementText");
 
             this.Text = LanguageService.GetString("Kayıt Ekranı");
+
+            _ttPassword.SetToolTip(chbShowPassword, LanguageService.T("Şifreyi göster", "Show password"));
         }
 
         private void btnClear_Click(object sender, EventArgs e)
@@ -64,6 +78,7 @@ namespace neoStockMasterv2.Forms
             txtPassword.Clear();
             txtMail.Clear();
             chbContract.Checked = false;
+            chbShowPassword.Checked = false;
         }
 
         private void cmbLanguage_SelectedIndexChanged(object sender, EventArgs e)
@@ -79,7 +94,7 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-        private void btnRegister_Click(object sender, EventArgs e)
+        private async void btnRegister_Click(object sender, EventArgs e)
         {
             if (!chbContract.Checked)
             {
@@ -111,46 +126,54 @@ namespace neoStockMasterv2.Forms
             string password = txtPassword.Text.Trim();
             string email = txtMail.Text.Trim();
             string language = cmbLanguage.Text;
+            string errorTitle = LanguageService.T("Hata", "Error");
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                MessageBox.Show("İsim boş bırakılamaz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("İsim boş bırakılamaz.", "Name cannot be empty."), errorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(password))
             {
-                MessageBox.Show("Şifre boş bırakılamaz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Şifre boş bırakılamaz.", "Password cannot be empty."), errorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (password.Length < 6)
             {
-                MessageBox.Show("Şifre en az 6 karakter olmalıdır.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Şifre en az 6 karakter olmalıdır.", "Password must be at least 6 characters."), errorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(email))
             {
-                MessageBox.Show("Mail adresi boş bırakılamaz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Mail adresi boş bırakılamaz.", "E-mail address cannot be empty."), errorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             try
             {
-                var mailAddress = new System.Net.Mail.MailAddress(email);
-
-                User newUser = new User(name, email, password, language);
-
-                string resultMessage = _userService.RegisterUser(newUser);
-
-                MessageBox.Show(resultMessage);
-
+                _ = new System.Net.Mail.MailAddress(email);   // format kontrolü
             }
             catch (FormatException)
             {
-                MessageBox.Show("Geçersiz mail adresi formatı. Lütfen doğru bir mail adresi giriniz.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Geçersiz mail adresi formatı. Lütfen doğru bir mail adresi giriniz.", "Invalid e-mail format. Please enter a valid e-mail address."),
+                    errorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
+            }
+
+            btnRegister.Enabled = false;   // mail giderken çift tıklamayı engelle
+
+            try
+            {
+                User newUser = new User(name, email, password, language);
+                string resultMessage = await _userService.RegisterUserAsync(newUser);
+                MessageBox.Show(resultMessage);
+            }
+            finally
+            {
+                btnRegister.Enabled = true;
             }
         }
 
@@ -171,40 +194,34 @@ namespace neoStockMasterv2.Forms
 
         private void VerifyAccountForUser()
         {
-            // Kullanıcı adı ve doğrulama kodunu al
             string userName = txtVerificationName.Text.Trim();
             string verificationCodeEntered = txtVerificationCode.Text.Trim();
 
-            // Kullanıcıyı veritabanından veya JSON listesinden bul
             List<User> users = _userService.GetAllUsers();
             User user = users.FirstOrDefault(u => u.Name.Equals(userName, StringComparison.OrdinalIgnoreCase));
 
             if (user == null)
             {
-                MessageBox.Show("Kullanıcı bulunamadı. Lütfen doğru adı girin.");
+                MessageBox.Show(LanguageService.T("Kullanıcı bulunamadı. Lütfen doğru adı girin.", "User not found. Please enter the correct name."));
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(verificationCodeEntered))
             {
-                MessageBox.Show("Doğrulama kodu boş olamaz.");
+                MessageBox.Show(LanguageService.T("Doğrulama kodu boş olamaz.", "Verification code cannot be empty."));
                 return;
             }
 
-            // VerificationCode ile kullanıcının girdiği kodu karşılaştır
             if (user.VerificationCode == verificationCodeEntered)
             {
-                user.IsVerified = true;  // ✅ Kullanıcıyı doğrula
-
-                // Değişiklikleri kaydet
+                user.IsVerified = true;
                 _userService.SaveAllUsers(users);
 
-                MessageBox.Show($"{userName} kullanıcısı başarıyla doğrulandı!");
-
+                MessageBox.Show(LanguageService.T($"{userName} kullanıcısı başarıyla doğrulandı!", $"User {userName} has been verified successfully!"));
             }
             else
             {
-                MessageBox.Show("Doğrulama kodu yanlış.");
+                MessageBox.Show(LanguageService.T("Doğrulama kodu yanlış.", "Wrong verification code."));
             }
         }
 
@@ -230,7 +247,8 @@ namespace neoStockMasterv2.Forms
 
             string agreementText = !string.IsNullOrEmpty(rawText)
                 ? rawText
-                : "Sözleşme metni yüklenemedi. Lütfen sistem yöneticisi ile iletişime geçin.";
+                : LanguageService.T("Sözleşme metni yüklenemedi. Lütfen sistem yöneticisi ile iletişime geçin.",
+                    "The agreement text could not be loaded. Please contact the system administrator.");
             // 1. Ana Formun Modernize Edilmesi
             Form agreementForm = new Form();
             agreementForm.Text = agreementTitle;

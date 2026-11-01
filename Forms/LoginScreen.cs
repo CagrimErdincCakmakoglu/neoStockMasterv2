@@ -1,5 +1,4 @@
-﻿//using Microsoft.VisualBasic.ApplicationServices;
-using neoStockMasterv2.Data.Services;
+﻿using neoStockMasterv2.Data.Services;
 using neoStockMasterv2.Data.Entities;
 using neoStockMasterv2.Forms;
 using System;
@@ -75,40 +74,31 @@ namespace neoStockMasterv2
                 return;
             }
 
-            bool rememberUsername = chkRememberID.Checked;
-            bool rememberPassword = chkRememberPassword.Checked;
+            var (success, message) = userService.Login(username, password, chkRememberID.Checked, chkRememberPassword.Checked);
 
-            string loginResult = userService.Login(username, password, rememberUsername, rememberPassword);
-
-            if (loginResult.StartsWith("Giriş başarılı!"))
+            if (!success)
             {
-
-                // Başarılı giriş
-                MessageBox.Show(loginResult, "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                User loggedInUser = userService.GetCurrentUser();
-                MainMenu.LoggedInUser = loggedInUser;
-                ProductManagementScreen.LoggedInUser = loggedInUser;
-                AddProductScreen.LoggedInUser = loggedInUser;
-                EditProductScreen.LoggedInUser = loggedInUser;
-                ProductService.LoggedInUser = loggedInUser;
-                PricingOrderScreen.LoggedInUser = loggedInUser;
-                OrderViewEditScreen.LoggedInUser = loggedInUser;
-                //CalculatePriceAddOrderScreen.LoggedInUser = loggedInUser;
-                UserInfoScreen.LoggedInUser = loggedInUser;
-                //UserService.LoggedInUser = loggedInUser;
-                //ViewOrdersEditingScreen.LoggedInUser = loggedInUser;
-                OrderService.LoggedInUser = loggedInUser;
-                ZReportScreen.LoggedInUser = loggedInUser;
-
-                MainMenu mainMenu = new MainMenu(loggedInUser);
-                mainMenu.Show();
-                this.Hide();
+                MessageBox.Show(message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-            else
-            {
-                MessageBox.Show(loginResult, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+
+            MessageBox.Show(message, "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            User loggedInUser = UserService.LoggedInUser;
+            MainMenu.LoggedInUser = loggedInUser;
+            ProductManagementScreen.LoggedInUser = loggedInUser;
+            AddProductScreen.LoggedInUser = loggedInUser;
+            EditProductScreen.LoggedInUser = loggedInUser;
+            ProductService.LoggedInUser = loggedInUser;
+            PricingOrderScreen.LoggedInUser = loggedInUser;
+            OrderViewEditScreen.LoggedInUser = loggedInUser;
+            UserInfoScreen.LoggedInUser = loggedInUser;
+            OrderService.LoggedInUser = loggedInUser;
+            ZReportScreen.LoggedInUser = loggedInUser;
+
+            MainMenu mainMenu = new MainMenu(loggedInUser);
+            mainMenu.Show();
+            this.Hide();
         }
 
         private void UpdateLanguage()
@@ -188,11 +178,10 @@ namespace neoStockMasterv2
         private void LoginScreen_Load(object sender, EventArgs e)
         {
             txtId.Text = Properties.Settings.Default.Username;
-            txtPassword.Text = Properties.Settings.Default.Password;
+            txtPassword.Text = SecretProtector.Unprotect(Properties.Settings.Default.Password);
 
             chkRememberID.Checked = !string.IsNullOrEmpty(Properties.Settings.Default.Username);
-            chkRememberPassword.Checked = !string.IsNullOrEmpty(Properties.Settings.Default.Password);
-
+            chkRememberPassword.Checked = !string.IsNullOrEmpty(txtPassword.Text);
             cmbLanguage.SelectedItem = LanguageService.CurrentLanguage;
 
             string version = Application.ProductVersion;

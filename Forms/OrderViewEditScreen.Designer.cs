@@ -77,10 +77,6 @@
             ((System.ComponentModel.ISupportInitialize)nmrDisc).BeginInit();
             grbPriceDetails.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbInfo).BeginInit();
-            //SuspendLayout();
-            // 
-            // menuStripLanguage
-            // 
             menuStripLanguage.BackColor = SystemColors.MenuBar;
             menuStripLanguage.Items.AddRange(new ToolStripItem[] { türkçeToolStripMenuItem, englishToolStripMenuItem });
             menuStripLanguage.Location = new Point(0, 0);
@@ -197,7 +193,6 @@
             lwDisc.Size = new Size(685, 94);
             lwDisc.TabIndex = 11;
             lwDisc.UseCompatibleStateImageBehavior = false;
-            lwDisc.ItemCheck += lwDisc_ItemCheck;
             lwDisc.ItemChecked += lwDisc_ItemChecked;
             lwDisc.MouseClick += lwDisc_MouseClick;
             // 

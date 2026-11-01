@@ -532,4 +532,55 @@ Yazılımın tersine mühendislik (reverse engineering) yöntemleriyle kaynak ko
   <data name="Fiyat Analizi" xml:space="preserve">
     <value>Fiyat Analizi</value>
   </data>
+  <data name="Bize Ulaşın" xml:space="preserve">
+    <value>Bize Ulaşın</value>
+  </data>
+  <data name="Mail Gönder" xml:space="preserve">
+    <value>Mail Gönder</value>
+  </data>
+  <data name="Bizi Arayın" xml:space="preserve">
+    <value>Bizi Arayın</value>
+  </data>
+  <data name="Whatsapp ile" xml:space="preserve">
+    <value>Whatsapp ile</value>
+  </data>
+  <data name="Çağrı Başlat" xml:space="preserve">
+    <value>Çağrı Başlat</value>
+  </data>
+  <data name="Teknik Destek" xml:space="preserve">
+    <value>Teknik Destek</value>
+  </data>
+  <data name="Hata Bildirimi" xml:space="preserve">
+    <value>Hata Bildirimi</value>
+  </data>
+  <data name="Abonelik ve Ödeme" xml:space="preserve">
+    <value>Abonelik ve Ödeme</value>
+  </data>
+  <data name="Fiyat Teklifi" xml:space="preserve">
+    <value>Fiyat Teklifi</value>
+  </data>
+  <data name="Şikayet" xml:space="preserve">
+    <value>Şikayet</value>
+  </data>
+  <data name="Öneri" xml:space="preserve">
+    <value>Öneri</value>
+  </data>
+  <data name="Genel İletişim" xml:space="preserve">
+    <value>Genel İletişim</value>
+  </data>
+  <data name="Hesap Bilgi Değişimi" xml:space="preserve">
+    <value>Hesap Bilgi Değişimi</value>
+  </data>
+  <data name="Teknik" xml:space="preserve">
+    <value>Teknik</value>
+  </data>
+  <data name="Satış ve Hesap" xml:space="preserve">
+    <value>Satış ve Hesap</value>
+  </data>
+  <data name="Geri Bildirim" xml:space="preserve">
+    <value>Geri Bildirim</value>
+  </data>
+  <data name="Teşekkür" xml:space="preserve">
+    <value>Teşekkür</value>
+  </data>
 </root>

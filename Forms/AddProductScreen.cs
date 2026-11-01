@@ -12,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
+using System.Globalization;
 
 namespace neoStockMasterv2.Forms
 {
@@ -69,7 +69,7 @@ namespace neoStockMasterv2.Forms
             { "İzlanda Kronası", "ISK" },
             { "Ürdün Dinarı", "JOD" },
             { "Güney Kore Wonu", "₩" },
-            { "Kazan Tengesi", "₸" },
+            { "Kazak Tengesi", "₸" },
             { "Lübnan Lirası", "LBP" },
             { "Sri Lanka Rupisi", "LKR" },
             { "Litvanya Litası", "Lt" },
@@ -119,6 +119,20 @@ namespace neoStockMasterv2.Forms
         {
             InitializeComponent();
 
+            foreach (var nmr in new[]
+                {
+                nmrForexBuying1st, nmrForexSelling1st,
+                nmrForexBuying2nd, nmrForexSelling2nd,
+                nmrForexBuying3rd, nmrForexSelling3rd,
+                nmrForexBuying4th, nmrForexSelling4th,
+                nmrForexBuying5th, nmrForexSelling5th
+                })
+            {
+                nmr.Maximum = 1_000_000m;
+            }
+
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
+
             LanguageService.SetLanguage(selectedLanguage);
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             UpdateFormTexts();
@@ -138,6 +152,21 @@ namespace neoStockMasterv2.Forms
             cmbForex5th.SelectedIndexChanged += (s, e) => UpdateCurrencySymbol(cmbForex5th, cmbSymbol5th);
             // Para Sembolleri Doldurma Bitiş
 
+            // ── Çapraz kur: sonuç kutusu salt okunur, değerler değişince yeniden hesapla ──
+            nmrToMoneyUnite.ReadOnly = true;
+            nmrToMoneyUnite.Increment = 0;
+            nmrToMoneyUnite.TabStop = false;
+            nmrToMoneyUnite.DecimalPlaces = 4;
+
+            nmrFromMoneyUnite.ValueChanged += (s, e) => RecalculateCrossRate();
+            nmrFromMoneyUnite.KeyUp += (s, e) => RecalculateCrossRate();   // yazarken anlık
+
+            foreach (var (_, buy, sell) in ForexRows())
+            {
+                buy.ValueChanged += (s, e) => RecalculateCrossRate();
+                sell.ValueChanged += (s, e) => RecalculateCrossRate();
+            }
+
         }
 
         private async void AddProductScreen_Load(object sender, EventArgs e)
@@ -145,14 +174,6 @@ namespace neoStockMasterv2.Forms
             ConfigureForexUI();
             FillCurrencyProductComboBoxes();
             SetPersistentToolTip(pbSwap);
-
-            // Combobox'ların event'lerini bağla
-            cmbForex1st.SelectedIndexChanged += ForexComboBox_SelectedIndexChanged;
-            cmbForex2nd.SelectedIndexChanged += ForexComboBox_SelectedIndexChanged;
-            cmbForex3rd.SelectedIndexChanged += ForexComboBox_SelectedIndexChanged;
-            cmbForex4th.SelectedIndexChanged += ForexComboBox_SelectedIndexChanged;
-            cmbForex5th.SelectedIndexChanged += ForexComboBox_SelectedIndexChanged;
-
 
             cmbBanks.SelectedIndex = 0;
 
@@ -181,7 +202,7 @@ namespace neoStockMasterv2.Forms
         private void UpdateCrossRatesGroupVisibility()
         {
             int filledCount = forexComboBoxes.Count(cb => cb.SelectedItem != null && !string.IsNullOrEmpty(cb.SelectedItem.ToString()));
-            grbCrossRates.Enabled = filledCount >= 2;
+            grbCrossRates.Enabled = filledCount >= 1;
 
             // Eğer grbCrossRates disable edildiyse cmbFromMoney seçimini temizle
             if (!grbCrossRates.Enabled)
@@ -862,7 +883,12 @@ namespace neoStockMasterv2.Forms
             }
             finally
             {
-                isUpdatingComboBoxes = false; // Güncelleme bayrağını pasif et
+                foreach (var cb in forexComboBoxes)
+                {
+                    cb.SelectedIndexChanged -= ForexComboBox_SelectedIndexChanged;
+                    cb.SelectedIndexChanged += ForexComboBox_SelectedIndexChanged;
+                }
+                isUpdatingComboBoxes = false;
             }
         }
 
@@ -886,46 +912,38 @@ namespace neoStockMasterv2.Forms
         {
             try
             {
-                // Mevcut seçimleri al
                 var currentFrom = cmbFromMoney.SelectedItem?.ToString();
                 var currentTo = cmbToMoney.SelectedItem?.ToString();
 
-                // Bankanın desteklediği tüm dövizleri al
-                var bankCurrencies = GetCurrenciesForSelectedBank();
+                var currencies = GetCrossRateCurrencies();
 
-                // Önce her iki combobox'ı da temizle
                 cmbFromMoney.Items.Clear();
-                cmbToMoney.Items.Clear();
+                cmbFromMoney.Items.AddRange(currencies.ToArray());
 
-                // Tüm dövizleri From combobox'ına ekle
-                cmbFromMoney.Items.AddRange(bankCurrencies.ToArray());
-
-                // From combobox'ında seçim yap
                 if (currentFrom != null && cmbFromMoney.Items.Contains(currentFrom))
-                {
                     cmbFromMoney.SelectedItem = currentFrom;
-                }
+                else if (cmbFromMoney.Items.Count > 1)
+                    cmbFromMoney.SelectedIndex = 1;   // ilk döviz (0 = Türk Lirası)
                 else if (cmbFromMoney.Items.Count > 0)
-                {
                     cmbFromMoney.SelectedIndex = 0;
-                }
 
-                // To combobox'ını güncelle
-                UpdateToComboBoxBasedOnFromSelection();
+                // To listesi = From'da seçili olan hariç hepsi
+                cmbToMoney.Items.Clear();
+                foreach (var c in currencies)
+                    if (c != cmbFromMoney.SelectedItem?.ToString())
+                        cmbToMoney.Items.Add(c);
 
-                // Eğer To'da bir seçim varsa, From'dan kaldır
-                if (cmbToMoney.SelectedItem != null)
-                {
-                    UpdateFromComboBoxBasedOnToSelection();
-                }
+                if (currentTo != null && cmbToMoney.Items.Contains(currentTo))
+                    cmbToMoney.SelectedItem = currentTo;
+                else if (cmbToMoney.Items.Count > 0)
+                    cmbToMoney.SelectedIndex = 0;
 
-                cmbFromMoney_SelectedIndexChanged(cmbFromMoney, EventArgs.Empty);
-                cmbToMoney_SelectedIndexChanged(cmbToMoney, EventArgs.Empty);
+                RecalculateCrossRate();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Döviz listesi güncellenirken hata: {ex.Message}", "Hata",
-                              MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Döviz listesi güncellenirken hata: ", "Error while updating the currency list: ") + ex.Message,
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -937,7 +955,7 @@ namespace neoStockMasterv2.Forms
             if (cmbToMoney.SelectedItem != null)
             {
                 string selectedTo = cmbToMoney.SelectedItem.ToString();
-                var bankCurrencies = GetCurrenciesForSelectedBank();
+                var bankCurrencies = GetCrossRateCurrencies();
 
                 // To'da seçili olmayanları ekle
                 foreach (var currency in bankCurrencies)
@@ -968,7 +986,7 @@ namespace neoStockMasterv2.Forms
             if (cmbFromMoney.SelectedItem != null)
             {
                 string selectedFrom = cmbFromMoney.SelectedItem.ToString();
-                var bankCurrencies = GetCurrenciesForSelectedBank();
+                var bankCurrencies = GetCrossRateCurrencies();
 
                 // From'da seçili olmayanları ekle
                 foreach (var currency in bankCurrencies)
@@ -1008,6 +1026,97 @@ namespace neoStockMasterv2.Forms
             nmrForexBuying5th.Value = 0;
             nmrForexSelling5th.Value = 0;
         }
+
+        // ════════════════════ ÇAPRAZ KUR ════════════════════
+        private const string TurkishLira = "Türk Lirası";
+
+        // Ekrandaki 5 döviz satırı: para birimi + alış + satış
+        private (ComboBox Currency, NumericUpDown Buy, NumericUpDown Sell)[] ForexRows() => new[]
+        {
+            (cmbForex1st, nmrForexBuying1st, nmrForexSelling1st),
+            (cmbForex2nd, nmrForexBuying2nd, nmrForexSelling2nd),
+            (cmbForex3rd, nmrForexBuying3rd, nmrForexSelling3rd),
+            (cmbForex4th, nmrForexBuying4th, nmrForexSelling4th),
+            (cmbForex5th, nmrForexBuying5th, nmrForexSelling5th),
+        };
+
+        // Çapraz kurda seçilebilecek para birimleri: TL + ekranda seçili dövizler
+        private List<string> GetCrossRateCurrencies()
+        {
+            var list = new List<string> { TurkishLira };
+
+            foreach (var (cmb, _, _) in ForexRows())
+            {
+                string? currency = cmb.Enabled ? cmb.SelectedItem?.ToString() : null;
+                if (!string.IsNullOrEmpty(currency) && !list.Contains(currency))
+                    list.Add(currency);
+            }
+            return list;
+        }
+
+        // Para biriminin ekrandaki alış/satış kurunu bulur (TL için 1)
+        private bool TryGetRate(string currency, out decimal buy, out decimal sell)
+        {
+            buy = sell = 0;
+
+            if (currency == TurkishLira)
+            {
+                buy = sell = 1;
+                return true;
+            }
+
+            foreach (var (cmb, buyNmr, sellNmr) in ForexRows())
+            {
+                if (cmb.SelectedItem?.ToString() == currency && buyNmr.Value > 0 && sellNmr.Value > 0)
+                {
+                    buy = buyNmr.Value;
+                    sell = sellNmr.Value;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void RecalculateCrossRate()
+        {
+            bool tr = !LanguageService.IsEnglish;
+            string? from = cmbFromMoney.SelectedItem?.ToString();
+            string? to = cmbToMoney.SelectedItem?.ToString();
+
+            // Yazılmakta olan değeri de yakala (Value sadece kutudan çıkınca güncellenir)
+            decimal amount = decimal.TryParse(nmrFromMoneyUnite.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var typed)
+                ? typed
+                : nmrFromMoneyUnite.Value;
+
+            if (from == null || to == null)
+            {
+                nmrToMoneyUnite.Value = 0;
+                ttSwap.SetToolTip(nmrToMoneyUnite, "");
+                return;
+            }
+
+            if (!TryGetRate(from, out decimal fromBuy, out _) || !TryGetRate(to, out _, out decimal toSell))
+            {
+                nmrToMoneyUnite.Value = 0;
+                ttSwap.SetToolTip(nmrToMoneyUnite, tr
+                    ? "Seçili para birimi için bu bankada kur bulunamadı."
+                    : "No rate found for the selected currency at this bank.");
+                return;
+            }
+
+            // Döviz → TL: banka dövizi ALIŞ kurundan alır
+            // TL → döviz: banka dövizi SATIŞ kurundan satar
+            decimal unitRate = fromBuy / toSell;
+            decimal result = Math.Round(amount * unitRate, 4);
+
+            nmrToMoneyUnite.Value = Math.Min(Math.Max(result, nmrToMoneyUnite.Minimum), nmrToMoneyUnite.Maximum);
+
+            string bank = cmbBanks.SelectedItem?.ToString() ?? "";
+            ttSwap.SetToolTip(nmrToMoneyUnite, tr
+                ? $"1 {from} = {unitRate:N4} {to}\n({bank} alış/satış kuruyla)"
+                : $"1 {from} = {unitRate:N4} {to}\n(using {bank} buy/sell rates)");
+        }
+        
 
         private List<string> GetCurrenciesForSelectedBank()
         {
@@ -1594,32 +1703,36 @@ namespace neoStockMasterv2.Forms
 
         private void cmbFromMoney_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (isUpdatingComboBoxes) return;
-
-            try
+            if (!isUpdatingComboBoxes)
             {
-                isUpdatingComboBoxes = true;
-                UpdateToComboBoxBasedOnFromSelection();
+                try
+                {
+                    isUpdatingComboBoxes = true;
+                    UpdateToComboBoxBasedOnFromSelection();
+                }
+                finally
+                {
+                    isUpdatingComboBoxes = false;
+                }
             }
-            finally
-            {
-                isUpdatingComboBoxes = false;
-            }
+            RecalculateCrossRate();
         }
 
         private void cmbToMoney_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (isUpdatingComboBoxes) return;
-
-            try
+            if (!isUpdatingComboBoxes)
             {
-                isUpdatingComboBoxes = true;
-                UpdateFromComboBoxBasedOnToSelection();
+                try
+                {
+                    isUpdatingComboBoxes = true;
+                    UpdateFromComboBoxBasedOnToSelection();
+                }
+                finally
+                {
+                    isUpdatingComboBoxes = false;
+                }
             }
-            finally
-            {
-                isUpdatingComboBoxes = false;
-            }
+            RecalculateCrossRate();
         }
 
         private void SetPersistentToolTip(PictureBox pictureBox, int delay = 1000)
@@ -1702,10 +1815,6 @@ namespace neoStockMasterv2.Forms
                     cmbToMoney.Items.AddRange(toItems.ToArray());
                     if (!string.IsNullOrEmpty(fromSelected))
                         cmbToMoney.SelectedItem = fromSelected;
-
-                    // Numeric değerleri sıfırla
-                    nmrFromMoneyUnite.Value = 0.00m;
-                    nmrToMoneyUnite.Value = 0.00m;
                 }
                 finally
                 {
@@ -1717,6 +1826,8 @@ namespace neoStockMasterv2.Forms
             {
                 // Hiçbir şey yapma
             }
+
+            RecalculateCrossRate();
         }
 
         private void cmbFromMoney_DropDown(object sender, EventArgs e)
@@ -2018,7 +2129,15 @@ namespace neoStockMasterv2.Forms
         {
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
-                MessageBox.Show("Lütfen ürün adını giriniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(LanguageService.T("Lütfen ürün adını giriniz.", "Please enter the product name."),
+                    LanguageService.T("Uyarı", "Warning"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (cmbCost.SelectedItem == null || cmbPrice.SelectedItem == null)
+            {
+                MessageBox.Show(LanguageService.T("Lütfen para birimlerini seçiniz.", "Please select the currencies."),
+                    LanguageService.T("Uyarı", "Warning"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -2028,42 +2147,32 @@ namespace neoStockMasterv2.Forms
             decimal price = nmrPrice.Value;
             string priceCurrency = cmbPrice.SelectedItem.ToString();
             int stock = (int)nmrStock.Value;
-            string addedBy = LoggedInUser?.Name ?? "Unknown";
 
-            // Onay mesajı oluştur
-            string confirmationMessage = $"Ürün Bilgileri:\n\n" +
-                                         $"Ad: {name}\n" +
-                                         $"Maliyet: {cost} {costCurrency}\n" +
-                                         $"Satış: {price} {priceCurrency}\n" +
-                                         $"Stok: {stock}\n" +
-                                         $"Bu ürünü eklemek istiyor musunuz?";
+            string confirmationMessage = LanguageService.T(
+                $"Ürün Bilgileri:\n\nAd: {name}\nMaliyet: {cost} {costCurrency}\nSatış: {price} {priceCurrency}\nStok: {stock}\n\nBu ürünü eklemek istiyor musunuz?",
+                $"Product Details:\n\nName: {name}\nCost: {cost} {costCurrency}\nPrice: {price} {priceCurrency}\nStock: {stock}\n\nDo you want to add this product?");
 
-            var result = MessageBox.Show(confirmationMessage, "Ürün Ekleme Onayı", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (MessageBox.Show(confirmationMessage, LanguageService.T("Ürün Ekleme Onayı", "Add Product"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
 
-            if (result == DialogResult.Yes)
+            var product = new Product
             {
-                var product = new Product
-                {
-                    ID = Guid.NewGuid().ToString(),
-                    Name = name,
-                    Cost = cost,
-                    CostCurrency = costCurrency,
-                    Price = price,
-                    PriceCurrency = priceCurrency,
-                    Stock = stock,
-                    AddedBy = addedBy,
-                    DateAdded = DateTime.Now
-                };
+                ID = Guid.NewGuid().ToString(),
+                Name = name,
+                Cost = cost,
+                CostCurrency = costCurrency,
+                Price = price,
+                PriceCurrency = priceCurrency,
+                Stock = stock,
+                AddedBy = LoggedInUser?.Name ?? "Unknown",
+                DateAdded = DateTime.Now
+            };
 
-                _productService.AddProduct(product);
-                btnClear.PerformClick(); // btnClear tıklanmış gibi yap
+            if (!_productService.AddProduct(product)) return;   // aynı isim varsa form temizlenmez
 
-                ProductAdded?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                MessageBox.Show("Ürün ekleme işlemi iptal edildi.", "İptal", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            btnClear.PerformClick();
+            ProductAdded?.Invoke(this, EventArgs.Empty);
         }
 
         private void nmrCost_KeyUp(object sender, KeyEventArgs e)

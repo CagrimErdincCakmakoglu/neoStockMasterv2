@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using neoStockMasterv2.Controls;
+using neoStockMasterv2.Data.Services.BankServices;
 
 namespace neoStockMasterv2.Forms
 {
@@ -22,6 +23,10 @@ namespace neoStockMasterv2.Forms
         ProductService productService = new ProductService();
         private CustomCalendar _calendar;
         private DateTime? _activeFilterDate = null; // null = tarih filtresi yok
+
+        // Net kazanç için döviz kurları (ekran açıkken bir kez çekilir)
+        private Dictionary<string, (decimal BuyRate, decimal SellRate)>? _rates;
+        private bool _ratesTried = false;
 
         // DataGridView/FormsPlot uzerinde calisantooltip yonetimi
         private readonly Dictionary<Control, (ToolTip tt, string text)> _tooltipMap =
@@ -35,7 +40,6 @@ namespace neoStockMasterv2.Forms
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
 
             DisableOrderFields(false); // Sipariş alanlarını düzenlenemez yap
-            LoadUserOrderStats(); // Sipariş istatistiklerini yükle
             LoadLoggedInUserProducts(); // Giriş yapmış kullanıcının ürünlerini yükle
 
             // ── RadioButton Olaylarını Bağlama ──
@@ -52,13 +56,8 @@ namespace neoStockMasterv2.Forms
             rbOrderFive.Click += rbOrder_Click;
 
             PopulateOrderGrid();// Sipariş detay tablosunu doldur
-            PopulateFinancialGrids(); // Finansal tabloları doldur
-        }
 
-        private void ZReportScreen_Load(object sender, EventArgs e)
-        {
-            mcDate.Visible = false;         // sadece gizle
-            this.Controls.Add(_calendar);   // yeni takvimi üstüne koy
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
         }
 
         private void LanguageService_LanguageChanged()
@@ -98,8 +97,6 @@ namespace neoStockMasterv2.Forms
             // Grid İçeriğini Yeni Dile Göre Yeniden Doldur
             PopulateOrderGrid();
 
-            PopulateFinancialGrids(); // Finansal tabloları da yeni dile göre yeniden doldur
-
             LoadUserOrderStatsDGW();
             PopulateFinancialGridsDGW();
 
@@ -119,17 +116,17 @@ namespace neoStockMasterv2.Forms
             }
 
             AttachTooltip(dgwGrossProfit, ttGross, isTurkish
-                ? "Brüt Kazanç Tablosu: Satışlardan elde edilen toplam geliri gösterir. Ürün maliyeti düşülmeden önceki ham kazancı para birimine göre listeler."
-                : "Gross Profit Table: Shows total revenue from sales. Lists raw earnings before product costs are deducted, grouped by currency.");
+                ? "Brüt Kazanç Tablosu: Satışlardan elde edilen toplam geliri gösterir. \n Ürün maliyeti düşülmeden önceki ham kazancı para birimine göre listeler."
+                : "Gross Profit Table: Shows total revenue from sales.\n Lists raw earnings before product costs are deducted, grouped by currency.");
 
             AttachTooltip(dgwNetProfit, ttProfit, isTurkish
-                ? "Net Kazanç Tablosu: Brüt gelirden vergi ve maliyetler çıkarıldıktan sonra kalan gerçek kazancı para birimine göre gösterir."
-                : "Net Profit Table: Shows actual earnings remaining after taxes and costs are deducted from gross revenue, grouped by currency.");
+                ? "Net Kazanç Tablosu: Vergiler (ÖTV/KDV) çıkarılmış satış tutarından ürün maliyeti düşülerek hesaplanır.\nFarklı para birimindeki maliyetler güncel kurla çevrilir. '*' satırı hesaplanamayan kalemleri gösterir."
+                : "Net Profit Table: Sales amount excluding taxes (SCT/VAT) minus product cost.\nCosts in other currencies are converted at the current rate. The '*' row shows items that could not be calculated.");
 
             AttachTooltip(dgwTax, ttTax, isTurkish
-                ? "Vergi Tablosu: Siparişlere uygulanan KDV/ÖTV tutarlarını listeler. Toplam vergi yükünü para birimine göre gösterir."
-                : "Tax Table: Lists VAT/SCT amounts applied to orders. Shows the total tax burden grouped by currency.");
-            }
+                ? "Vergi Tablosu: Siparişlere uygulanan KDV/ÖTV tutarlarını listeler.\n Toplam vergi yükünü para birimine göre gösterir."
+                : "Tax Table: Lists VAT/SCT amounts applied to orders.\n Shows the total tax burden grouped by currency.");
+        }
 
         private void UpdateSelectedLanguage()
         {
@@ -170,51 +167,6 @@ namespace neoStockMasterv2.Forms
             };
         }
 
-        private void AttachPlotTooltip(GroupBox groupBox, Control plotControl, ToolTip tooltip, string text)
-        {
-            // Metin guncellemesi icin map'e kaydet
-            if (_tooltipMap.ContainsKey(plotControl))
-            {
-                _tooltipMap[plotControl] = (tooltip, text);
-                return;
-            }
-            _tooltipMap[plotControl] = (tooltip, text);
-
-            bool _isShowing = false;
-
-            groupBox.MouseMove += (s, e) =>
-            {
-                // Mouse'un GroupBox icindeki konumunu plotControl'un bounds'u ile karsilastir
-                Point posInGroup = e.Location;
-                Rectangle plotBounds = plotControl.Bounds;
-
-                if (plotBounds.Contains(posInGroup))
-                {
-                    if (!_isShowing && _tooltipMap.TryGetValue(plotControl, out var entry))
-                    {
-                        _isShowing = true;
-                        Point screenPos = groupBox.PointToScreen(new Point(posInGroup.X + 10, posInGroup.Y + 15));
-                        Point formPos = this.PointToClient(screenPos);
-                        entry.tt.Show(entry.text, this, formPos.X, formPos.Y, 6000);
-                    }
-                }
-                else
-                {
-                    if (_isShowing)
-                    {
-                        _isShowing = false;
-                        tooltip.Hide(this);
-                    }
-                }
-            };
-
-            groupBox.MouseLeave += (s, e) =>
-            {
-                _isShowing = false;
-                tooltip.Hide(this);
-            };
-        }
-
         private void türkçeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             LanguageService.SetLanguage("Türkçe");
@@ -240,89 +192,14 @@ namespace neoStockMasterv2.Forms
             nmrSalesShare.Enabled = isEnabled;
         }
 
-        private void LoadUserOrderStats()
-        {
-            OrderService.LoggedInUser = LoggedInUser;
-
-            // Tüm siparişleri al
-            var allOrders = orderService.GetAllOrders(); // Tüm siparişler
-            var userOrders = orderService.GetOrdersByLoggedInUser();
-
-            nmrTotalOrder.Value = userOrders.Count;
-
-            // Her bir sipariş durumu (indeksi) için sayaçları tanımla
-            int countOrderOne = 0;   // 0. İndeks: Siparişe Başlanmadı / Not Started
-            int countOrderTwo = 0;   // 1. İndeks: Hazırlanıyor / In Preparation
-            int countOrderThree = 0; // 2. İndeks: Kargoya Verilecek / To Be Shipped
-            int countOrderFour = 0;  // 3. İndeks: Kargolandı / Shipped
-            int countOrderFive = 0;  // 4. İndeks: Bitti / Completed
-
-            // Siparişlerin durumlarına göre sayım
-            foreach (var order in userOrders)
-            {
-                string status = order.OrderStatues?.ToString() ?? "";
-
-                if (status == "Siparişe Başlanmadı" || status == "Not Started")
-                {
-                    countOrderOne++;
-                }
-                else if (status == "Hazırlanıyor" || status == "In Preparation")
-                {
-                    countOrderTwo++;
-                }
-                else if (status == "Kargoya Verilecek" || status == "To Be Shipped")
-                {
-                    countOrderThree++;
-                }
-                else if (status == "Kargolandı" || status == "Shipped")
-                {
-                    countOrderFour++;
-                }
-                else if (status == "Bitti" || status == "Completed")
-                {
-                    countOrderFive++;
-                }
-            }
-
-            // Elde edilen toplamları NumericUpDown kontrollerine yazdır
-            nmrOrderOne.Value = countOrderOne;
-            nmrOrderTwo.Value = countOrderTwo;
-            nmrOrderThree.Value = countOrderThree;
-            nmrOrderFour.Value = countOrderFour;
-            nmrOrderFive.Value = countOrderFive;
-        }
-
         private void LoadLoggedInUserProducts()
         {
-            try
+            cmbProducts.Items.Clear();
+
+            foreach (var product in productService.GetProductsByLoggedInUser())
             {
-                // 1. ComboBox'ı temizle
-                cmbProducts.Items.Clear();
-
-                // 2. ProductService üzerinden tüm ürünleri çek
-                var allProducts = productService.GetAllProducts();
-
-                // 3. Sadece giriş yapmış kullanıcının eklediği ürünleri filtrele
-                // Not: LoggedInUser formunuzda static veya instance property olarak tanımlı olmalıdır.
-                if (LoggedInUser != null && allProducts != null)
-                {
-                    var userProducts = allProducts
-                        .Where(p => p.AddedBy == LoggedInUser.Name) // Veya LoggedInUser.ID projenizin yapısına göre
-                        .ToList();
-
-                    // 4. Filtrelenen ürünlerin isimlerini ComboBox'a ekle
-                    foreach (var product in userProducts)
-                    {
-                        if (!string.IsNullOrEmpty(product.Name))
-                        {
-                            cmbProducts.Items.Add(product.Name);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ürünler yüklenirken bir hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!string.IsNullOrEmpty(product.Name))
+                    cmbProducts.Items.Add(product.Name);
             }
         }
 
@@ -394,7 +271,8 @@ namespace neoStockMasterv2.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ürün istatistikleri hesaplanırken bir hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Ürün istatistikleri hesaplanırken bir hata oluştu: ", "An error occurred while calculating product statistics: ") + ex.Message,
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -518,8 +396,8 @@ namespace neoStockMasterv2.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Sipariş tablosu yüklenirken hata oluştu: {ex.Message}",
-                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(LanguageService.T("Sipariş tablosu yüklenirken hata oluştu: ", "An error occurred while loading the order table: ") + ex.Message,
+                    LanguageService.T("Hata", "Error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -566,147 +444,10 @@ namespace neoStockMasterv2.Forms
             }
         }
 
-        private void PopulateFinancialGrids()
-        {
-            try
-            {
-                // 1. Tabloların mevcut satırlarını ve sütunlarını temizle
-                dgwGrossProfit.Rows.Clear();
-                dgwGrossProfit.Columns.Clear();
-
-                dgwNetProfit.Rows.Clear();
-                dgwNetProfit.Columns.Clear();
-
-                dgwTax.Rows.Clear();
-                dgwTax.Columns.Clear();
-
-                // 2. Tabloların tasarım ve sütun ayarlarını yap
-                string currencyHeader = LanguageService.CurrentLanguage == "Türkçe" ? "Para Birimi" : "Currency";
-                string amountHeader = LanguageService.CurrentLanguage == "Türkçe" ? "Tutar" : "Amount";
-                string taxTypeHeader = LanguageService.CurrentLanguage == "Türkçe" ? "Vergi Türü" : "Tax Type";
-
-                dgwGrossProfit.Columns.Add("Currency", currencyHeader);
-                dgwGrossProfit.Columns.Add("Amount", amountHeader);
-
-                dgwNetProfit.Columns.Add("Currency", currencyHeader);
-                dgwNetProfit.Columns.Add("Amount", amountHeader);
-
-                dgwTax.Columns.Add("TaxType", taxTypeHeader);
-                dgwTax.Columns.Add("Currency", currencyHeader);
-                dgwTax.Columns.Add("Amount", amountHeader);
-
-                // ── YENİ DÜZENLEME: Tabloların Ekrana Tam Sığması Ayarları ──
-                foreach (var grid in new[] { dgwGrossProfit, dgwNetProfit, dgwTax })
-                {
-                    grid.RowHeadersVisible = false;          // En soldaki boş sütunu gizle
-                    grid.AllowUserToResizeColumns = false;   // El ile genişlik değiştirmeyi kapat
-                    grid.AllowUserToResizeRows = false;      // El ile yükseklik değiştirmeyi kapat
-                    grid.AllowUserToAddRows = false;         // Boş yeni satır eklenmesini engelle
-                    grid.ReadOnly = true;                    // Düzenlemeyi kapat
-                    grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect; // Satır seçim modu
-
-                    // Çizgilerin ve arka planın tam oturmasını sağla
-                    grid.ScrollBars = ScrollBars.None;       // Bu küçük tablolar için kaydırma çubuğunu gizle (tam sığacağı için)
-                }
-
-                // Brüt ve Net Kazanç için Sütun Dağılım Modu (Genişlikleri tam paylaştırır)
-                dgwGrossProfit.Columns["Currency"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                dgwGrossProfit.Columns["Amount"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-                dgwNetProfit.Columns["Currency"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                dgwNetProfit.Columns["Amount"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-                // Vergi Tablosu için Sütun Dağılım Modu
-                dgwTax.Columns["TaxType"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                dgwTax.Columns["Currency"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                dgwTax.Columns["Amount"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-
-                // 3. Kullanıcı siparişlerini al
-                OrderService.LoggedInUser = LoggedInUser;
-                var userOrders = orderService.GetOrdersByLoggedInUser();
-
-                if (userOrders == null || userOrders.Count == 0) return;
-
-                // Para birimlerine göre biriktiriciler (Dictionary)
-                Dictionary<string, decimal> grossProfits = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-                Dictionary<string, decimal> netProfits = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-                Dictionary<string, decimal> taxTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-
-                string vatLabel = LanguageService.CurrentLanguage == "Türkçe" ? "KDV" : "VAT";
-                string sctLabel = LanguageService.CurrentLanguage == "Türkçe" ? "ÖTV" : "SCT";
-
-                foreach (var order in userOrders)
-                {
-                    // A. Brüt Kazanç
-                    if (order.PayableAmount != null)
-                    {
-                        foreach (var kp in order.PayableAmount)
-                        {
-                            if (grossProfits.ContainsKey(kp.Key)) grossProfits[kp.Key] += kp.Value;
-                            else grossProfits[kp.Key] = kp.Value;
-                        }
-                    }
-
-                    // B. Net Kazanç
-                    if (order.OrderContent != null)
-                    {
-                        foreach (var detail in order.OrderContent)
-                        {
-                            string currency = detail.Currency ?? "TRY";
-                            var dbProduct = productService.GetAllProducts()
-                                .FirstOrDefault(p => p.Name.Equals(detail.ProductName, StringComparison.OrdinalIgnoreCase));
-
-                            decimal unitCost = dbProduct?.Cost ?? 0;
-                            decimal detailNetProfit = (detail.OrderPrice - unitCost) * detail.Quantity;
-
-                            if (netProfits.ContainsKey(currency)) netProfits[currency] += detailNetProfit;
-                            else netProfits[currency] = detailNetProfit;
-                        }
-                    }
-
-                    // C. Vergi Hesaplama
-                    string vatKey = $"{vatLabel}_Türk Lirası";
-                    if (taxTotals.ContainsKey(vatKey)) taxTotals[vatKey] += order.TaxAmountVAT;
-                    else taxTotals[vatKey] = order.TaxAmountVAT;
-
-                    string sctKey = $"{sctLabel}_Türk Lirası";
-                    if (taxTotals.ContainsKey(sctKey)) taxTotals[sctKey] += order.TaxAmountSCT;
-                    else taxTotals[sctKey] = order.TaxAmountSCT;
-                }
-
-                // 4. Hesaplanan verileri tablolara aktar
-                foreach (var gp in grossProfits.OrderBy(x => x.Key))
-                {
-                    dgwGrossProfit.Rows.Add(gp.Key, gp.Value.ToString("N2"));
-
-                }
-
-                foreach (var np in netProfits.OrderBy(x => x.Key))
-                {
-                    dgwNetProfit.Rows.Add(np.Key, np.Value.ToString("N2"));
-                }
-
-                foreach (var tx in taxTotals.OrderBy(x => x.Key))
-                {
-                    string[] parts = tx.Key.Split('_');
-                    string taxType = parts[0];
-                    string currency = parts.Length > 1 ? parts[1] : "TRY";
-
-                    dgwTax.Rows.Add(taxType, currency, tx.Value.ToString("N2"));
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Finansal veriler yüklenirken hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private void LoadUserOrderStatsDGW()
         {
             OrderService.LoggedInUser = LoggedInUser;
 
-            var allOrders = orderService.GetAllOrders();
             var userOrders = orderService.GetOrdersByLoggedInUser();
 
             nmrTotalOrder.Value = userOrders.Count;
@@ -845,6 +586,8 @@ namespace neoStockMasterv2.Forms
 
         private void PopulateFinancialGridsDGW()
         {
+            bool tr = !LanguageService.IsEnglish;
+
             try
             {
                 dgwGrossProfit.Rows.Clear();
@@ -854,9 +597,9 @@ namespace neoStockMasterv2.Forms
                 dgwTax.Rows.Clear();
                 dgwTax.Columns.Clear();
 
-                string currencyHeader = LanguageService.CurrentLanguage == "Türkçe" ? "Para Birimi" : "Currency";
-                string amountHeader = LanguageService.CurrentLanguage == "Türkçe" ? "Tutar" : "Amount";
-                string taxTypeHeader = LanguageService.CurrentLanguage == "Türkçe" ? "Vergi Türü" : "Tax Type";
+                string currencyHeader = tr ? "Para Birimi" : "Currency";
+                string amountHeader = tr ? "Tutar" : "Amount";
+                string taxTypeHeader = tr ? "Vergi Türü" : "Tax Type";
 
                 dgwGrossProfit.Columns.Add("Currency", currencyHeader);
                 dgwGrossProfit.Columns.Add("Amount", amountHeader);
@@ -887,106 +630,99 @@ namespace neoStockMasterv2.Forms
 
                 OrderService.LoggedInUser = LoggedInUser;
                 var userOrders = orderService.GetOrdersByLoggedInUser();
-
                 if (userOrders == null || userOrders.Count == 0) return;
 
-                Dictionary<string, decimal> grossProfits = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-                Dictionary<string, decimal> netProfits = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-                Dictionary<string, decimal> taxTotals = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+                var grossProfits = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+                var netProfits = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+                decimal totalVatTL = 0m, totalSctTL = 0m;
+                int skippedLines = 0;
 
-                string vatLabel = LanguageService.CurrentLanguage == "Türkçe" ? "KDV" : "VAT";
-                string sctLabel = LanguageService.CurrentLanguage == "Türkçe" ? "ÖTV" : "SCT";
+                var myProducts = productService.GetProductsByLoggedInUser();
 
                 foreach (var order in userOrders)
                 {
+                    // Brüt: müşteriden alınan toplam (değişmedi)
                     if (order.PayableAmount != null)
-                    {
                         foreach (var kp in order.PayableAmount)
-                        {
-                            if (grossProfits.ContainsKey(kp.Key)) grossProfits[kp.Key] += kp.Value;
-                            else grossProfits[kp.Key] = kp.Value;
-                        }
-                    }
+                            grossProfits[kp.Key] = grossProfits.GetValueOrDefault(kp.Key) + kp.Value;
 
+                    // Net: vergisiz satış − maliyet (maliyet satış para birimine çevrilir)
                     if (order.OrderContent != null)
                     {
+                        decimal taxFactor = (1 + order.TaxPercentageSCT / 100m) * (1 + order.TaxPercentageVAT / 100m);
+
                         foreach (var detail in order.OrderContent)
                         {
-                            string currency = detail.Currency ?? "TRY";
-                            var dbProduct = productService.GetAllProducts()
-                                .FirstOrDefault(p => p.Name.Equals(detail.ProductName, StringComparison.OrdinalIgnoreCase));
+                            string currency = string.IsNullOrWhiteSpace(detail.Currency) ? "Türk Lirası" : detail.Currency;
 
-                            decimal unitCost = dbProduct?.Cost ?? 0;
-                            decimal detailNetProfit = (detail.OrderPrice - unitCost) * detail.Quantity;
+                            var dbProduct = myProducts.FirstOrDefault(p =>
+                                p.Name.Equals(detail.ProductName, StringComparison.OrdinalIgnoreCase));
+                            if (dbProduct == null) { skippedLines++; continue; }   // ürün silinmiş
 
-                            if (netProfits.ContainsKey(currency)) netProfits[currency] += detailNetProfit;
-                            else netProfits[currency] = detailNetProfit;
+                            decimal lineTotal = detail.Total != 0 ? detail.Total : detail.OrderPrice * detail.Quantity;
+                            decimal lineWithoutTax = detail.IsDiscounted && taxFactor > 0 ? lineTotal / taxFactor : lineTotal;
+
+                            decimal? unitCost = ConvertCurrency(dbProduct.Cost, dbProduct.CostCurrency, currency);
+                            if (unitCost == null) { skippedLines++; continue; }   // kur bulunamadı
+
+                            netProfits[currency] = netProfits.GetValueOrDefault(currency)
+                                                   + lineWithoutTax - unitCost.Value * detail.Quantity;
                         }
                     }
 
-                    string vatKey = $"{vatLabel}_Türk Lirası";
-                    if (taxTotals.ContainsKey(vatKey)) taxTotals[vatKey] += order.TaxAmountVAT;
-                    else taxTotals[vatKey] = order.TaxAmountVAT;
-
-                    string sctKey = $"{sctLabel}_Türk Lirası";
-                    if (taxTotals.ContainsKey(sctKey)) taxTotals[sctKey] += order.TaxAmountSCT;
-                    else taxTotals[sctKey] = order.TaxAmountSCT;
+                    totalVatTL += order.TaxAmountVAT;
+                    totalSctTL += order.TaxAmountSCT;
                 }
 
-                foreach (var gp in grossProfits.OrderBy(x => x.Key)) dgwGrossProfit.Rows.Add(gp.Key, gp.Value.ToString("N2"));
-                foreach (var np in netProfits.OrderBy(x => x.Key)) dgwNetProfit.Rows.Add(np.Key, np.Value.ToString("N2"));
+                foreach (var gp in grossProfits.OrderBy(x => x.Key))
+                    dgwGrossProfit.Rows.Add(gp.Key, gp.Value.ToString("N2"));
 
-                foreach (var tx in taxTotals.OrderBy(x => x.Key))
-                {
-                    string[] parts = tx.Key.Split('_');
-                    string taxType = parts[0];
-                    string currency = parts.Length > 1 ? parts[1] : "TRY";
-                    dgwTax.Rows.Add(taxType, currency, tx.Value.ToString("N2"));
-                }
+                foreach (var np in netProfits.OrderBy(x => x.Key))
+                    dgwNetProfit.Rows.Add(np.Key, np.Value.ToString("N2"));
 
-                // ── ScottPlot 5.x Uyumlu Finansal Sütun Grafiği Çizimi ──
+                if (skippedLines > 0)
+                    dgwNetProfit.Rows.Add("*", tr ? $"{skippedLines} kalem hesaplanamadı" : $"{skippedLines} item(s) not calculated");
+
+                string tlName = tr ? "Türk Lirası" : "Turkish Lira";
+                dgwTax.Rows.Add(tr ? "KDV" : "VAT", tlName, totalVatTL.ToString("N2"));
+                dgwTax.Rows.Add(tr ? "ÖTV" : "SCT", tlName, totalSctTL.ToString("N2"));
+
+                // ── ScottPlot: brüt / net sütun grafiği ──
                 try
                 {
                     fpMoney.Plot.Clear();
 
                     var orderedGross = grossProfits.OrderBy(x => x.Key).ToList();
-
-                    List<double> grossValues = new List<double>();
-                    List<double> netValues = new List<double>();
-                    List<ScottPlot.Tick> ticks = new List<ScottPlot.Tick>();
+                    var grossValues = new List<double>();
+                    var netValues = new List<double>();
+                    var ticks = new List<ScottPlot.Tick>();
 
                     for (int i = 0; i < orderedGross.Count; i++)
                     {
-                        string currencyKey = orderedGross[i].Key;
+                        string key = orderedGross[i].Key;
                         grossValues.Add((double)orderedGross[i].Value);
-
-                        double netVal = netProfits.ContainsKey(currencyKey) ? (double)netProfits[currencyKey] : 0;
-                        netValues.Add(netVal);
-
-                        ticks.Add(new ScottPlot.Tick(i, currencyKey));
+                        netValues.Add(netProfits.TryGetValue(key, out decimal nv) ? (double)nv : 0);
+                        ticks.Add(new ScottPlot.Tick(i, key));
                     }
 
                     if (grossValues.Count > 0)
                     {
                         var barGroup1 = fpMoney.Plot.Add.Bars(grossValues.ToArray());
-                        barGroup1.Label = LanguageService.GetString("Brüt Kazanç") ?? "Brüt Kazanç";
+                        barGroup1.Label = LanguageService.GetString("Brüt Kazanç") ?? (tr ? "Brüt Kazanç" : "Gross Profit");
                         barGroup1.Color = ScottPlot.Color.FromColor(Color.FromArgb(52, 152, 219));
 
                         var barGroup2 = fpMoney.Plot.Add.Bars(netValues.ToArray());
-                        barGroup2.Label = LanguageService.GetString("Net Kazanç") ?? "Net Kazanç";
+                        barGroup2.Label = LanguageService.GetString("Net Kazanç") ?? (tr ? "Net Kazanç" : "Net Profit");
                         barGroup2.Color = ScottPlot.Color.FromColor(Color.FromArgb(46, 204, 113));
 
-                        // ScottPlot 5 Eksen ve Manuel Etiket Yönetimi
                         fpMoney.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
-
                         fpMoney.Plot.FigureBackground.Color = ScottPlot.Color.FromColor(Color.Transparent);
                         fpMoney.Plot.DataBackground.Color = ScottPlot.Color.FromColor(Color.Transparent);
-
                         fpMoney.Plot.ShowLegend(ScottPlot.Alignment.UpperRight);
                     }
                     else
                     {
-                        var text = fpMoney.Plot.Add.Text("Finansal Veri Bulunamadı", 0, 0);
+                        var text = fpMoney.Plot.Add.Text(tr ? "Finansal Veri Bulunamadı" : "No Financial Data Found", 0, 0);
                         text.LabelFontSize = 14;
                         text.LabelAlignment = ScottPlot.Alignment.MiddleCenter;
                     }
@@ -998,12 +734,53 @@ namespace neoStockMasterv2.Forms
                 {
                     System.Diagnostics.Debug.WriteLine("Grafik 2 çizilirken hata oluştu: " + ex.Message);
                 }
-
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Finansal veriler yüklenirken hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show((tr ? "Finansal veriler yüklenirken hata oluştu: " : "An error occurred while loading financial data: ") + ex.Message,
+                    tr ? "Hata" : "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private static bool IsTL(string? currency) =>
+         string.IsNullOrWhiteSpace(currency) ||
+        currency.Equals("Türk Lirası", StringComparison.OrdinalIgnoreCase) ||
+        currency.Equals("TRY", StringComparison.OrdinalIgnoreCase) ||
+        currency.Equals("TL", StringComparison.OrdinalIgnoreCase);
+
+        // Tutarı bir para biriminden diğerine TL üzerinden çevirir. Kur yoksa null döner.
+        private decimal? ConvertCurrency(decimal amount, string? from, string? to)
+        {
+            if (IsTL(from) && IsTL(to)) return amount;
+            if (string.Equals(from, to, StringComparison.OrdinalIgnoreCase)) return amount;
+
+            if (!_ratesTried)
+            {
+                _ratesTried = true;
+                try
+                {
+                    // Task.Run: arayüz iş parçacığını kilitlenmeye sokmadan bekler
+                    _rates = Task.Run(() => new FREEMARKETforex().GetExchangeRatesAsync()).GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    _rates = null;   // internet yoksa: farklı para birimli satırlar "hesaplanamadı" sayılır
+                }
+            }
+
+            decimal? RateToTL(string? currency)
+            {
+                if (IsTL(currency)) return 1m;
+                if (_rates != null && currency != null && _rates.TryGetValue(currency, out var r) && r.SellRate > 0)
+                    return r.SellRate;
+                return null;
+            }
+
+            decimal? fromRate = RateToTL(from);
+            decimal? toRate = RateToTL(to);
+            if (fromRate == null || toRate == null) return null;
+
+            return amount * fromRate.Value / toRate.Value;
         }
 
         private void InitCalendar()
@@ -1091,167 +868,154 @@ namespace neoStockMasterv2.Forms
 
         private void btnOrderHistory_Click(object sender, EventArgs e)
         {
+            bool tr = !LanguageService.IsEnglish;
             string selectedProduct = cmbProducts.SelectedItem?.ToString();
 
             if (string.IsNullOrEmpty(selectedProduct))
             {
-                MessageBox.Show("Lütfen önce bir ürün seçiniz.", "Uyarı",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(tr ? "Lütfen önce bir ürün seçiniz." : "Please select a product first.",
+                    tr ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // ListView yapılandır
             lwProductDetails.Clear();
             lwProductDetails.View = View.Details;
             lwProductDetails.FullRowSelect = true;
             lwProductDetails.GridLines = true;
 
-            lwProductDetails.Columns.Add("Müşteri Adı", 130);
-            lwProductDetails.Columns.Add("Sipariş Tarihi", 130);
-            lwProductDetails.Columns.Add("Adet", 60);
-            lwProductDetails.Columns.Add("Birim Fiyat", 90);
-            lwProductDetails.Columns.Add("Para Birimi", 80);
-            lwProductDetails.Columns.Add("Tutar", 90);
-            lwProductDetails.Columns.Add("Sipariş Durumu", 120);
+            lwProductDetails.Columns.Add(tr ? "Müşteri Adı" : "Customer", 130);
+            lwProductDetails.Columns.Add(tr ? "Sipariş Tarihi" : "Order Date", 130);
+            lwProductDetails.Columns.Add(tr ? "Adet" : "Qty", 60);
+            lwProductDetails.Columns.Add(tr ? "Birim Fiyat" : "Unit Price", 90);
+            lwProductDetails.Columns.Add(tr ? "Para Birimi" : "Currency", 80);
+            lwProductDetails.Columns.Add(tr ? "Tutar" : "Amount", 90);
+            lwProductDetails.Columns.Add(tr ? "Sipariş Durumu" : "Status", 120);
 
             OrderService.LoggedInUser = LoggedInUser;
-            var userOrders = orderService.GetOrdersByLoggedInUser();
-
             bool found = false;
 
-            foreach (var order in userOrders)
+            foreach (var order in orderService.GetOrdersByLoggedInUser())
             {
                 if (order.OrderContent == null) continue;
 
                 foreach (var detail in order.OrderContent)
                 {
-                    if (detail.ProductName == null) continue;
-                    if (!detail.ProductName.Equals(selectedProduct, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (detail.ProductName == null ||
+                        !detail.ProductName.Equals(selectedProduct, StringComparison.OrdinalIgnoreCase)) continue;
 
                     found = true;
-
-                    decimal total = detail.OrderPrice * detail.Quantity;
-
                     var item = new ListViewItem(order.CustomerName ?? "-");
-                    item.SubItems.Add(order.OrderDate.ToString("yyyy-MM-dd HH:mm"));
+                    item.SubItems.Add(order.OrderDate.ToString(tr ? "dd.MM.yyyy HH:mm" : "MM/dd/yyyy HH:mm"));
                     item.SubItems.Add(detail.Quantity.ToString());
                     item.SubItems.Add(detail.OrderPrice.ToString("N2"));
                     item.SubItems.Add(detail.Currency ?? "-");
-                    item.SubItems.Add(total.ToString("N2"));
+                    item.SubItems.Add((detail.OrderPrice * detail.Quantity).ToString("N2"));
                     item.SubItems.Add(order.OrderStatues ?? "-");
-
                     lwProductDetails.Items.Add(item);
                 }
             }
 
             if (!found)
-                MessageBox.Show($"'{selectedProduct}' ürününe ait sipariş geçmişi bulunamadı.", "Bilgi",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(tr ? $"'{selectedProduct}' ürününe ait sipariş geçmişi bulunamadı." : $"No order history found for '{selectedProduct}'.",
+                    tr ? "Bilgi" : "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnPriceAnalysis_Click(object sender, EventArgs e)
         {
+            bool tr = !LanguageService.IsEnglish;
             string selectedProduct = cmbProducts.SelectedItem?.ToString();
 
             if (string.IsNullOrEmpty(selectedProduct))
             {
-                MessageBox.Show("Lütfen önce bir ürün seçiniz.", "Uyarı",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(tr ? "Lütfen önce bir ürün seçiniz." : "Please select a product first.",
+                    tr ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Ürün bilgisini al
-            ProductService.LoggedInUser = LoggedInUser;
-            var allProducts = productService.GetAllProducts();
-            var product = allProducts.FirstOrDefault(p =>
-                p.Name.Equals(selectedProduct, StringComparison.OrdinalIgnoreCase) &&
-                p.AddedBy.Equals(LoggedInUser?.Name ?? "", StringComparison.OrdinalIgnoreCase));
+            var product = productService.GetProductsByLoggedInUser()
+                .FirstOrDefault(p => p.Name.Equals(selectedProduct, StringComparison.OrdinalIgnoreCase));
 
             if (product == null)
             {
-                MessageBox.Show("Ürün bilgisi bulunamadı.", "Hata",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(tr ? "Ürün bilgisi bulunamadı." : "Product information not found.",
+                    tr ? "Hata" : "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Sipariş verilerinden hesapla
+            // Para birimine göre: (vergisiz ciro, adet)
+            var salesByCurrency = new Dictionary<string, (decimal revenue, int qty)>(StringComparer.OrdinalIgnoreCase);
+
             OrderService.LoggedInUser = LoggedInUser;
-            var userOrders = orderService.GetOrdersByLoggedInUser();
-
-            // Para birimine göre grupla: currency → (toplam tutar, toplam adet)
-            var salesByCurrency = new Dictionary<string, (decimal totalRevenue, int totalQty)>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var order in userOrders)
+            foreach (var order in orderService.GetOrdersByLoggedInUser())
             {
                 if (order.OrderContent == null) continue;
+                decimal taxFactor = (1 + order.TaxPercentageSCT / 100m) * (1 + order.TaxPercentageVAT / 100m);
 
                 foreach (var detail in order.OrderContent)
                 {
-                    if (detail.ProductName == null) continue;
-                    if (!detail.ProductName.Equals(selectedProduct, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (detail.ProductName == null ||
+                        !detail.ProductName.Equals(selectedProduct, StringComparison.OrdinalIgnoreCase)) continue;
 
                     string currency = detail.Currency ?? "?";
-                    decimal lineTotal = detail.OrderPrice * detail.Quantity;
+                    decimal lineTotal = detail.Total != 0 ? detail.Total : detail.OrderPrice * detail.Quantity;
+                    decimal lineWithoutTax = detail.IsDiscounted && taxFactor > 0 ? lineTotal / taxFactor : lineTotal;
 
-                    if (salesByCurrency.ContainsKey(currency))
-                    {
-                        var existing = salesByCurrency[currency];
-                        salesByCurrency[currency] = (existing.totalRevenue + lineTotal, existing.totalQty + detail.Quantity);
-                    }
-                    else
-                    {
-                        salesByCurrency[currency] = (lineTotal, detail.Quantity);
-                    }
+                    var (rev, qty) = salesByCurrency.GetValueOrDefault(currency);
+                    salesByCurrency[currency] = (rev + lineWithoutTax, qty + detail.Quantity);
                 }
             }
 
-            // ListView yapılandır
             lwProductDetails.Clear();
             lwProductDetails.View = View.Details;
             lwProductDetails.FullRowSelect = true;
             lwProductDetails.GridLines = true;
+            lwProductDetails.Columns.Add(tr ? "Metrik" : "Metric", 180);
+            lwProductDetails.Columns.Add(tr ? "Değer" : "Value", 200);
 
-            lwProductDetails.Columns.Add("Metrik", 180);
-            lwProductDetails.Columns.Add("Değer", 200);
-
-            // Sabit satırlar
             void AddRow(string metric, string value)
             {
                 var item = new ListViewItem(metric);
                 item.SubItems.Add(value);
                 lwProductDetails.Items.Add(item);
             }
+            const string line1 = "─────────────────", line2 = "──────────────────";
 
-            AddRow("Ürün Adı", product.Name);
-            AddRow("─────────────────", "──────────────────");
-            AddRow("Maliyet", $"{product.Cost:N2} {product.CostCurrency}");
-            AddRow("Satış Fiyatı (Kayıtlı)", $"{product.Price:N2} {product.PriceCurrency}");
-            AddRow("─────────────────", "──────────────────");
+            AddRow(tr ? "Ürün Adı" : "Product", product.Name);
+            AddRow(line1, line2);
+            AddRow(tr ? "Maliyet" : "Cost", $"{product.Cost:N2} {product.CostCurrency}");
+            AddRow(tr ? "Satış Fiyatı (Kayıtlı)" : "Listed Price", $"{product.Price:N2} {product.PriceCurrency}");
+            AddRow(line1, line2);
 
             if (salesByCurrency.Count == 0)
             {
-                AddRow("Sipariş Verisi", "Henüz satış yok");
+                AddRow(tr ? "Sipariş Verisi" : "Order Data", tr ? "Henüz satış yok" : "No sales yet");
+                return;
             }
-            else
+
+            foreach (var kvp in salesByCurrency)
             {
-                foreach (var kvp in salesByCurrency)
+                string currency = kvp.Key;
+                decimal revenue = kvp.Value.revenue;
+                int qty = kvp.Value.qty;
+                decimal avgPrice = qty > 0 ? revenue / qty : 0;
+                decimal? unitCost = ConvertCurrency(product.Cost, product.CostCurrency, currency);
+
+                AddRow(tr ? "Para Birimi" : "Currency", currency);
+                AddRow(tr ? "Toplam Satış Adedi" : "Units Sold", qty.ToString());
+                AddRow(tr ? "Toplam Ciro (vergisiz)" : "Revenue (excl. tax)", $"{revenue:N2} {currency}");
+                AddRow(tr ? "Ort. Satış Fiyatı" : "Avg. Price", $"{avgPrice:N2} {currency}");
+
+                if (unitCost != null)
                 {
-                    string currency = kvp.Key;
-                    decimal revenue = kvp.Value.totalRevenue;
-                    int qty = kvp.Value.totalQty;
-                    decimal avgPrice = qty > 0 ? revenue / qty : 0;
-                    decimal grossProfit = avgPrice - product.Cost; // Maliyet ile karşılaştır (aynı para birimi varsayımıyla)
-
-                    AddRow($"Para Birimi", currency);
-                    AddRow($"Toplam Satış Adedi", qty.ToString());
-                    AddRow($"Toplam Ciro", $"{revenue:N2} {currency}");
-                    AddRow($"Ort. Satış Fiyatı", $"{avgPrice:N2} {currency}");
-                    AddRow($"Brüt Kar / Adet*", $"{grossProfit:N2} {currency}");
-                    AddRow($"Toplam Brüt Kar*", $"{grossProfit * qty:N2} {currency}");
-                    AddRow("─────────────────", "──────────────────");
+                    decimal profitPerUnit = avgPrice - unitCost.Value;
+                    AddRow(tr ? "Kâr / Adet" : "Profit / Unit", $"{profitPerUnit:N2} {currency}");
+                    AddRow(tr ? "Toplam Kâr" : "Total Profit", $"{profitPerUnit * qty:N2} {currency}");
                 }
-
-                AddRow("* Maliyet ile hesaplanmıştır", "");
+                else
+                {
+                    AddRow(tr ? "Kâr" : "Profit", tr ? "Kur bulunamadı, hesaplanamadı" : "No exchange rate, not calculated");
+                }
+                AddRow(line1, line2);
             }
         }
     }

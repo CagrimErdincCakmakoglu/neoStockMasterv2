@@ -135,7 +135,7 @@ namespace neoStockMasterv2.Data.Services.BankServices
             }
             catch (Exception ex)
             {
-                throw new Exception("Kapalı Çarşı döviz kurları alınırken hata: " + ex.Message);
+                throw new Exception("Kuveyt Türk döviz kurları alınırken hata: " + ex.Message);
             }
         }
 

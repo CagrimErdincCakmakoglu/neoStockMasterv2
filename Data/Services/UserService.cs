@@ -1,151 +1,200 @@
-﻿using neoStockMasterv2.Data.Entities;
+﻿using System.Net;
+using System.Security.Cryptography;
+using neoStockMasterv2.Data.Entities;
 using neoStockMasterv2.Properties;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace neoStockMasterv2.Data.Services
 {
     public class UserService
     {
-        private readonly string _filePath = "users.json";
+        private static readonly string _filePath = Path.Combine(AppContext.BaseDirectory, "users.json");
+
+        private static readonly Dictionary<string, int> SerialKeys = new()
+        {
+            ["TRIAL7"] = 7,
+            ["FULL30"] = 30,
+            ["VIP90"] = 90
+        };
+
         public static User LoggedInUser { get; set; }
-        private List<User> users;
-        private User _currentUser;
 
         public UserService()
         {
             if (!File.Exists(_filePath))
-            {
                 File.WriteAllText(_filePath, "[]");
-            }
-            users = GetAllUsers();
         }
 
-        public string RegisterUser(User newUser)
+        // ── Kayıt ──
+        public async Task<string> RegisterUserAsync(User newUser)
         {
-            users = GetAllUsers();
+            var users = GetAllUsers();
 
             if (users.Any(u => u.Name.Equals(newUser.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                return "Bu kullanıcı adı zaten kullanılıyor!";
-            }
+                return LanguageService.T("Bu kullanıcı adı zaten kullanılıyor!", "This username is already taken!");
 
             if (users.Any(u => u.Email.Equals(newUser.Email, StringComparison.OrdinalIgnoreCase)))
-            {
-                return "Bu e-posta adresi zaten kayıtlı!";
-            }
+                return LanguageService.T("Bu e-posta adresi zaten kayıtlı!", "This e-mail address is already registered!");
+
+            newUser.Password = PasswordHasher.Hash(newUser.Password);
 
             try
             {
-                EmailService emailService = new EmailService("stockmasterapp@gmail.com", "bfbi cpom gikz azjx");
-                emailService.SendWelcomeEmail(newUser.Email, newUser.Name, newUser.VerificationCode);
-
-                users.Add(newUser);
-                SaveAllUsers(users);
+                await new EmailService().SendWelcomeEmailAsync(newUser.Email, newUser.Name, newUser.VerificationCode);
             }
             catch (Exception ex)
             {
-                return $"Kayıt başarısız! Hoş geldiniz e-postası gönderilemedi: {ex.Message}";
+                return LanguageService.T("Kayıt başarısız! Doğrulama e-postası gönderilemedi: ", "Registration failed! The verification e-mail could not be sent: ") + ex.Message;
             }
 
-            return "Kayıt başarılı!";
+            users.Add(newUser);
+            SaveAllUsers(users);
+            return LanguageService.T("Kayıt başarılı! Doğrulama kodu e-posta adresinize gönderildi.", "Registration successful! The verification code has been sent to your e-mail.");
         }
 
-        public string Login(string username, string password, bool rememberUsername, bool rememberPassword)
+        // ── Giriş / Çıkış ──
+        public (bool Success, string Message) Login(string username, string password, bool rememberUsername, bool rememberPassword)
         {
-            users = GetAllUsers();
-
+            var users = GetAllUsers();
             var user = users.FirstOrDefault(u => u.Name.Equals(username, StringComparison.OrdinalIgnoreCase));
 
-            if (user == null || user.Password != password)
-            {
-                return "Geçersiz kullanıcı adı veya şifre!";
-            }
+            if (user == null || !PasswordHasher.Verify(password, user.Password))
+                return (false, LanguageService.T("Geçersiz kullanıcı adı veya şifre!", "Invalid username or password!"));
 
-            if (!user.IsVerified) // Kullanıcının onaylanıp onaylanmadığını kontrol et
-            {
-                return "Üyeliğiniz henüz onaylanmamış!\nLütfen hesabınızı onaylayınız.";
-            }
+            if (!user.IsVerified)
+                return (false, LanguageService.T("Üyeliğiniz henüz onaylanmamış!\nLütfen hesabınızı onaylayınız.", "Your account has not been verified yet!\nPlease verify your account."));
 
-            _currentUser = user;
-            LoggedInUser = user;
-            string currentIp = GetIpAddress();
-            user.AddLoginIp(currentIp);
+            // Eski düz metin şifreyi hash'e çevir
+            if (!PasswordHasher.IsHashed(user.Password))
+                user.Password = PasswordHasher.Hash(password);
+
+            user.MigrateLegacySubscription();
+            string ip = GetIpAddress();
+            user.AddLoginIp(ip);
             SaveAllUsers(users);
 
-            if (rememberUsername)
-                Settings.Default.Username = username;
-            else
-                Settings.Default.Username = string.Empty;
+            LoggedInUser = user;
+            ActivityLogService.Log(ActivityType.Login, new Dictionary<string, string> { ["Ip"] = ip });
 
-            if (rememberPassword)
-                Settings.Default.Password = password;
-            else
-                Settings.Default.Password = string.Empty;
-
+            Settings.Default.Username = rememberUsername ? username : string.Empty;
+            Settings.Default.Password = rememberPassword ? SecretProtector.Protect(password) : string.Empty;
             Settings.Default.Save();
 
-            return $"Giriş başarılı! Hoş geldiniz, {user.Name}.";
+            return (true, $"Giriş başarılı! Hoş geldiniz, {user.Name}.");
         }
 
-        public string ChangePassword(string username, string currentPassword, string newPassword)
+        public void LogOut()
         {
-            users = GetAllUsers();
+            LoggedInUser = null;
+        }
+
+        // ── Şifre ──
+        public (bool Success, string Message) ChangePassword(string username, string newPassword)
+        {
+            var users = GetAllUsers();
             var user = users.FirstOrDefault(u => u.Name.Equals(username, StringComparison.OrdinalIgnoreCase));
 
             if (user == null)
-            {
-                return "Geçersiz mevcut şifre!";
-            }
+                return (false, LanguageService.T("Kullanıcı bulunamadı!", "User not found!"));
 
             if (newPassword.Length < 6)
-            {
-                return "Yeni şifre en az 6 karakter olmalıdır!";
-            }
+                return (false, LanguageService.T("Yeni şifre en az 6 karakter olmalıdır!", "The new password must be at least 6 characters!"));
 
-            user.Password = newPassword;
+            if (PasswordHasher.Verify(newPassword, user.Password))
+                return (false, LanguageService.T("Yeni şifre, mevcut şifreyle aynı olamaz!", "The new password cannot be the same as the current one!"));
+
+            user.Password = PasswordHasher.Hash(newPassword);
             SaveAllUsers(users);
 
-            return "Şifreniz başarıyla değiştirildi!";
+            ActivityLogService.Log(ActivityType.PasswordChanged);
+
+            if (LoggedInUser?.ID == user.ID)
+                LoggedInUser.Password = user.Password;
+
+            Settings.Default.Password = string.Empty;
+            Settings.Default.Save();
+
+            return (true, LanguageService.T("Şifreniz başarıyla değiştirildi!", "Your password has been changed successfully!"));
         }
 
+        public async Task<(bool Success, string Message)> ResetPasswordAsync(string email)
+        {
+            var users = GetAllUsers();
+            var user = users.FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+
+            if (user == null)
+                return (false, LanguageService.T("Bu e-posta adresine ait kullanıcı bulunamadı.", "No user was found for this e-mail address."));
+
+            string tempPassword = GenerateTemporaryPassword();
+
+            // Önce mail; gönderilemezse eski şifre geçerli kalır
+            await new EmailService().SendTemporaryPasswordEmailAsync(user.Email, tempPassword);
+
+            user.Password = PasswordHasher.Hash(tempPassword);
+            SaveAllUsers(users);
+            return (true, LanguageService.T("Geçici şifreniz e-posta adresinize gönderildi.", "Your temporary password has been sent to your e-mail address."));
+        }
+
+        private static string GenerateTemporaryPassword()
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+            return new string(Enumerable.Range(0, 10)
+                .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)])
+                .ToArray());
+        }
+
+        // ── Abonelik ──
+        public static int GetSerialKeyDays(string serialKey) =>
+            SerialKeys.TryGetValue(serialKey.Trim().ToUpperInvariant(), out int days) ? days : 0;
+
+        public (bool Success, string Message) ApplySerialKey(string serialKey)
+        {
+            serialKey = serialKey.Trim().ToUpperInvariant();
+            int days = GetSerialKeyDays(serialKey);
+
+            if (LoggedInUser == null) return (false, LanguageService.T("Aktif kullanıcı bulunamadı!", "No active user found!"));
+            if (days == 0) return (false, LanguageService.T("Geçersiz serial key!", "Invalid serial key!"));
+
+            var users = GetAllUsers();
+            var user = users.FirstOrDefault(u => u.ID == LoggedInUser.ID);
+            if (user == null) return (false, LanguageService.T("Kullanıcı güncellenemedi.", "The user could not be updated."));
+
+            if (user.UsedSerialKeys.Contains(serialKey))
+                return (false, LanguageService.T("Bu serial key daha önce kullanılmış!", "This serial key has already been used!"));
+
+            DateTime start = user.SubscriptionEnd.HasValue && user.SubscriptionEnd.Value > DateTime.Today
+                ? user.SubscriptionEnd.Value
+                : DateTime.Today;
+
+            user.SubscriptionEnd = start.AddDays(days);
+            user.UsedSerialKeys.Add(serialKey);
+            SaveAllUsers(users);
+
+            LoggedInUser.SubscriptionEnd = user.SubscriptionEnd;
+            LoggedInUser.UsedSerialKeys = user.UsedSerialKeys;
+
+            ActivityLogService.Log(ActivityType.SerialKeyApplied, new Dictionary<string, string>
+            {
+                ["Days"] = days.ToString(),
+                ["SubscriptionEnd"] = user.SubscriptionEnd!.Value.ToString("dd.MM.yyyy")
+            });
+
+            return (true, LanguageService.T(
+                $"{days} gün başarıyla eklendi!\nYeni kalan süreniz: {user.DaysLeft} gün",
+                $"{days} days added successfully!\nDays remaining: {user.DaysLeft}"));
+        }
+
+        // ── Diğer ──
         public bool UpdateCargoCompany(User user)
         {
-            try
-            {
-                // Kullanıcı verisini veri kaynağında güncelle (örneğin JSON dosyası ya da DB)
-                // Örnek bir JSON update için:
-                User existingUser = users.FirstOrDefault(u => u.Email == user.Email);
-                if (existingUser != null)
-                {
-                    existingUser.Cargo = user.Cargo;
-                    SaveAllUsers(users);// ya da SaveChanges gibi bir metot
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                // Loglama yapılabilir
-            }
+            var users = GetAllUsers();
+            var existingUser = users.FirstOrDefault(u => u.ID == user.ID);
+            if (existingUser == null) return false;
 
-            return false;
-        }
-
-        public string LogOut()
-        {
-            if (_currentUser == null)
-                return "Zaten giriş yapılmamış!";
-
-            _currentUser = null;
-            Settings.Default.Save();
-            return "Başarıyla çıkış yaptınız!";
+            existingUser.Cargo = user.Cargo;
+            SaveAllUsers(users);
+            ActivityLogService.Log(ActivityType.CargoUpdated, new Dictionary<string, string> { ["Cargo"] = user.Cargo ?? "-" });
+            return true;
         }
 
         public string GetIpAddress()
@@ -164,27 +213,12 @@ namespace neoStockMasterv2.Data.Services
         public void SaveAllUsers(List<User> users)
         {
             string json = JsonConvert.SerializeObject(users, Formatting.Indented);
-            File.WriteAllText(_filePath, json);
+            string tempPath = _filePath + ".tmp";
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, _filePath, overwrite: true);   // yarım yazılmış dosya kalmasın
         }
 
-        public User FindUserByEmail(string email)
-        {
-            users = GetAllUsers();
-            return users?.FirstOrDefault(user => user.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-        }
-
-        public User GetUserByName(string userName)
-        {
-            users = GetAllUsers();
-            return users?.FirstOrDefault(user => user.Name.Equals(userName, StringComparison.OrdinalIgnoreCase));
-        }
-
-
-        public User GetCurrentUser()
-        {
-            return _currentUser;
-        }
-
-
+        public User FindUserByEmail(string email) =>
+            GetAllUsers().FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
     }
 }

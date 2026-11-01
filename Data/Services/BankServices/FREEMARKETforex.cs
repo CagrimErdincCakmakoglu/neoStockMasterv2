@@ -426,8 +426,8 @@ namespace neoStockMasterv2.Data.Services.BankServices
 
                 // TND
                 rates["Tunus Dinarı"] = (
-                    DecimalCevir(DegerCikar(htmlContent, "<span cid=\"85\" dt=\"bA\"", ">", "</span>")),
-                    DecimalCevir(DegerCikar(htmlContent, "<span itemprop=\"price\" cid=\"85\" dt=\"amount\"", ">", "</span>"))
+                    DecimalCevir(DegerCikar(htmlContent, "<span cid=\"885\" dt=\"bA\"", ">", "</span>")),
+                    DecimalCevir(DegerCikar(htmlContent, "<span itemprop=\"price\" cid=\"885\" dt=\"amount\"", ">", "</span>"))
                 );
 
                 // TWD

@@ -28,9 +28,28 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainMenu));
             menuStripLanguage = new MenuStrip();
             türkçeToolStripMenuItem = new ToolStripMenuItem();
             englishToolStripMenuItem = new ToolStripMenuItem();
+            bizeUlaşToolStripMenuItem = new ToolStripMenuItem();
+            mailGonderToolStripMenuItem = new ToolStripMenuItem();
+            teknikToolStripMenuItem = new ToolStripMenuItem();
+            teknikDestekToolStripMenuItem1 = new ToolStripMenuItem();
+            hataBildirimiToolStripMenuItem = new ToolStripMenuItem();
+            satisHesapToolStripMenuItem = new ToolStripMenuItem();
+            abonelikVeOdemeToolStripMenuItem = new ToolStripMenuItem();
+            fiyatTeklifiToolStripMenuItem = new ToolStripMenuItem();
+            hesapBilgiDegisimiToolStripMenuItem = new ToolStripMenuItem();
+            geriBildirimToolStripMenuItem = new ToolStripMenuItem();
+            sikayetToolStripMenuItem = new ToolStripMenuItem();
+            oneriToolStripMenuItem = new ToolStripMenuItem();
+            digerToolStripMenuItem = new ToolStripMenuItem();
+            genelIletisimToolStripMenuItem = new ToolStripMenuItem();
+            tesekkurToolStripMenuItem = new ToolStripMenuItem();
+            biziArayinToolStripMenuItem = new ToolStripMenuItem();
+            whatsAppIleToolStripMenuItem = new ToolStripMenuItem();
+            cagriBaslatToolStripMenuItem = new ToolStripMenuItem();
             grbMenu = new GroupBox();
             btnZReport = new Button();
             btnViewOrdersEditOrders = new Button();
@@ -49,7 +68,7 @@
             // menuStripLanguage
             // 
             menuStripLanguage.BackColor = SystemColors.MenuBar;
-            menuStripLanguage.Items.AddRange(new ToolStripItem[] { türkçeToolStripMenuItem, englishToolStripMenuItem });
+            menuStripLanguage.Items.AddRange(new ToolStripItem[] { türkçeToolStripMenuItem, englishToolStripMenuItem, bizeUlaşToolStripMenuItem });
             menuStripLanguage.Location = new Point(0, 0);
             menuStripLanguage.Name = "menuStripLanguage";
             menuStripLanguage.Size = new Size(302, 24);
@@ -60,7 +79,7 @@
             // 
             türkçeToolStripMenuItem.Image = Languages.Turkish.TurkFlag;
             türkçeToolStripMenuItem.Name = "türkçeToolStripMenuItem";
-            türkçeToolStripMenuItem.Size = new Size(70, 20);
+            türkçeToolStripMenuItem.Size = new Size(71, 20);
             türkçeToolStripMenuItem.Text = "Türkçe";
             türkçeToolStripMenuItem.Click += türkçeToolStripMenuItem_Click;
             // 
@@ -71,6 +90,151 @@
             englishToolStripMenuItem.Size = new Size(73, 20);
             englishToolStripMenuItem.Text = "English";
             englishToolStripMenuItem.Click += englishToolStripMenuItem_Click;
+            // 
+            // bizeUlaşToolStripMenuItem
+            // 
+            bizeUlaşToolStripMenuItem.Alignment = ToolStripItemAlignment.Right;
+            bizeUlaşToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { mailGonderToolStripMenuItem, biziArayinToolStripMenuItem });
+            bizeUlaşToolStripMenuItem.Image = (Image)resources.GetObject("bizeUlaşToolStripMenuItem.Image");
+            bizeUlaşToolStripMenuItem.Name = "bizeUlaşToolStripMenuItem";
+            bizeUlaşToolStripMenuItem.Size = new Size(91, 20);
+            bizeUlaşToolStripMenuItem.Text = "Bize Ulaşın";
+            // 
+            // mailGonderToolStripMenuItem
+            // 
+            mailGonderToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { teknikToolStripMenuItem, satisHesapToolStripMenuItem, geriBildirimToolStripMenuItem, digerToolStripMenuItem });
+            mailGonderToolStripMenuItem.Image = (Image)resources.GetObject("mailGonderToolStripMenuItem.Image");
+            mailGonderToolStripMenuItem.Name = "mailGonderToolStripMenuItem";
+            mailGonderToolStripMenuItem.Size = new Size(180, 22);
+            mailGonderToolStripMenuItem.Text = "Mail Gönder";
+            // 
+            // teknikToolStripMenuItem
+            // 
+            teknikToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { teknikDestekToolStripMenuItem1, hataBildirimiToolStripMenuItem });
+            teknikToolStripMenuItem.Image = (Image)resources.GetObject("teknikToolStripMenuItem.Image");
+            teknikToolStripMenuItem.Name = "teknikToolStripMenuItem";
+            teknikToolStripMenuItem.Size = new Size(149, 22);
+            teknikToolStripMenuItem.Text = "Teknik";
+            // 
+            // teknikDestekToolStripMenuItem1
+            // 
+            teknikDestekToolStripMenuItem1.Image = (Image)resources.GetObject("teknikDestekToolStripMenuItem1.Image");
+            teknikDestekToolStripMenuItem1.Name = "teknikDestekToolStripMenuItem1";
+            teknikDestekToolStripMenuItem1.Size = new Size(146, 22);
+            teknikDestekToolStripMenuItem1.Text = "Teknik Destek";
+            teknikDestekToolStripMenuItem1.Click += teknikDestekToolStripMenuItem1_Click;
+            // 
+            // hataBildirimiToolStripMenuItem
+            // 
+            hataBildirimiToolStripMenuItem.Image = (Image)resources.GetObject("hataBildirimiToolStripMenuItem.Image");
+            hataBildirimiToolStripMenuItem.Name = "hataBildirimiToolStripMenuItem";
+            hataBildirimiToolStripMenuItem.Size = new Size(146, 22);
+            hataBildirimiToolStripMenuItem.Text = "Hata Bildirimi";
+            hataBildirimiToolStripMenuItem.Click += hataBildirimiToolStripMenuItem_Click;
+            // 
+            // satisHesapToolStripMenuItem
+            // 
+            satisHesapToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { abonelikVeOdemeToolStripMenuItem, fiyatTeklifiToolStripMenuItem, hesapBilgiDegisimiToolStripMenuItem });
+            satisHesapToolStripMenuItem.Image = (Image)resources.GetObject("satisHesapToolStripMenuItem.Image");
+            satisHesapToolStripMenuItem.Name = "satisHesapToolStripMenuItem";
+            satisHesapToolStripMenuItem.Size = new Size(149, 22);
+            satisHesapToolStripMenuItem.Text = "Satış ve Hesap";
+            // 
+            // abonelikVeOdemeToolStripMenuItem
+            // 
+            abonelikVeOdemeToolStripMenuItem.Image = (Image)resources.GetObject("abonelikVeOdemeToolStripMenuItem.Image");
+            abonelikVeOdemeToolStripMenuItem.Name = "abonelikVeOdemeToolStripMenuItem";
+            abonelikVeOdemeToolStripMenuItem.Size = new Size(182, 22);
+            abonelikVeOdemeToolStripMenuItem.Text = "Abonelik ve Ödeme";
+            abonelikVeOdemeToolStripMenuItem.Click += abonelikVeOdemeToolStripMenuItem_Click;
+            // 
+            // fiyatTeklifiToolStripMenuItem
+            // 
+            fiyatTeklifiToolStripMenuItem.Image = (Image)resources.GetObject("fiyatTeklifiToolStripMenuItem.Image");
+            fiyatTeklifiToolStripMenuItem.Name = "fiyatTeklifiToolStripMenuItem";
+            fiyatTeklifiToolStripMenuItem.Size = new Size(182, 22);
+            fiyatTeklifiToolStripMenuItem.Text = "Fiyat Teklifi";
+            fiyatTeklifiToolStripMenuItem.Click += fiyatTeklifiToolStripMenuItem_Click;
+            // 
+            // hesapBilgiDegisimiToolStripMenuItem
+            // 
+            hesapBilgiDegisimiToolStripMenuItem.Image = (Image)resources.GetObject("hesapBilgiDegisimiToolStripMenuItem.Image");
+            hesapBilgiDegisimiToolStripMenuItem.Name = "hesapBilgiDegisimiToolStripMenuItem";
+            hesapBilgiDegisimiToolStripMenuItem.Size = new Size(182, 22);
+            hesapBilgiDegisimiToolStripMenuItem.Text = "Hesap Bilgi Değişimi";
+            hesapBilgiDegisimiToolStripMenuItem.Click += hesapBilgiDegisimiToolStripMenuItem_Click;
+            // 
+            // geriBildirimToolStripMenuItem
+            // 
+            geriBildirimToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { sikayetToolStripMenuItem, oneriToolStripMenuItem });
+            geriBildirimToolStripMenuItem.Image = (Image)resources.GetObject("geriBildirimToolStripMenuItem.Image");
+            geriBildirimToolStripMenuItem.Name = "geriBildirimToolStripMenuItem";
+            geriBildirimToolStripMenuItem.Size = new Size(149, 22);
+            geriBildirimToolStripMenuItem.Text = "Geri Bildirim";
+            // 
+            // sikayetToolStripMenuItem
+            // 
+            sikayetToolStripMenuItem.Image = (Image)resources.GetObject("sikayetToolStripMenuItem.Image");
+            sikayetToolStripMenuItem.Name = "sikayetToolStripMenuItem";
+            sikayetToolStripMenuItem.Size = new Size(111, 22);
+            sikayetToolStripMenuItem.Text = "Şikayet";
+            sikayetToolStripMenuItem.Click += sikayetToolStripMenuItem_Click;
+            // 
+            // oneriToolStripMenuItem
+            // 
+            oneriToolStripMenuItem.Image = (Image)resources.GetObject("oneriToolStripMenuItem.Image");
+            oneriToolStripMenuItem.Name = "oneriToolStripMenuItem";
+            oneriToolStripMenuItem.Size = new Size(111, 22);
+            oneriToolStripMenuItem.Text = "Öneri";
+            oneriToolStripMenuItem.Click += oneriToolStripMenuItem_Click;
+            // 
+            // digerToolStripMenuItem
+            // 
+            digerToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { genelIletisimToolStripMenuItem, tesekkurToolStripMenuItem });
+            digerToolStripMenuItem.Image = (Image)resources.GetObject("digerToolStripMenuItem.Image");
+            digerToolStripMenuItem.Name = "digerToolStripMenuItem";
+            digerToolStripMenuItem.Size = new Size(149, 22);
+            digerToolStripMenuItem.Text = "Diğer";
+            // 
+            // genelIletisimToolStripMenuItem
+            // 
+            genelIletisimToolStripMenuItem.Image = (Image)resources.GetObject("genelIletisimToolStripMenuItem.Image");
+            genelIletisimToolStripMenuItem.Name = "genelIletisimToolStripMenuItem";
+            genelIletisimToolStripMenuItem.Size = new Size(145, 22);
+            genelIletisimToolStripMenuItem.Text = "Genel İletişim";
+            genelIletisimToolStripMenuItem.Click += genelIletisimToolStripMenuItem_Click;
+            // 
+            // tesekkurToolStripMenuItem
+            // 
+            tesekkurToolStripMenuItem.Image = (Image)resources.GetObject("tesekkurToolStripMenuItem.Image");
+            tesekkurToolStripMenuItem.Name = "tesekkurToolStripMenuItem";
+            tesekkurToolStripMenuItem.Size = new Size(145, 22);
+            tesekkurToolStripMenuItem.Text = "Teşekkürler";
+            tesekkurToolStripMenuItem.Click += tesekkurToolStripMenuItem_Click;
+            // 
+            // biziArayinToolStripMenuItem
+            // 
+            biziArayinToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { whatsAppIleToolStripMenuItem, cagriBaslatToolStripMenuItem });
+            biziArayinToolStripMenuItem.Image = (Image)resources.GetObject("biziArayinToolStripMenuItem.Image");
+            biziArayinToolStripMenuItem.Name = "biziArayinToolStripMenuItem";
+            biziArayinToolStripMenuItem.Size = new Size(180, 22);
+            biziArayinToolStripMenuItem.Text = "Bizi Arayın";
+            // 
+            // whatsAppIleToolStripMenuItem
+            // 
+            whatsAppIleToolStripMenuItem.Image = (Image)resources.GetObject("whatsAppIleToolStripMenuItem.Image");
+            whatsAppIleToolStripMenuItem.Name = "whatsAppIleToolStripMenuItem";
+            whatsAppIleToolStripMenuItem.Size = new Size(180, 22);
+            whatsAppIleToolStripMenuItem.Text = "WhatsApp ile";
+            whatsAppIleToolStripMenuItem.Click += whatsAppIleToolStripMenuItem_Click;
+            // 
+            // cagriBaslatToolStripMenuItem
+            // 
+            cagriBaslatToolStripMenuItem.Image = (Image)resources.GetObject("cagriBaslatToolStripMenuItem.Image");
+            cagriBaslatToolStripMenuItem.Name = "cagriBaslatToolStripMenuItem";
+            cagriBaslatToolStripMenuItem.Size = new Size(180, 22);
+            cagriBaslatToolStripMenuItem.Text = "Çağrı Başlat";
+            cagriBaslatToolStripMenuItem.Click += cagriBaslatToolStripMenuItem_Click;
             // 
             // grbMenu
             // 
@@ -142,7 +306,7 @@
             chbTop.AutoSize = true;
             chbTop.Location = new Point(84, 63);
             chbTop.Name = "chbTop";
-            chbTop.Size = new Size(139, 19);
+            chbTop.Size = new Size(140, 19);
             chbTop.TabIndex = 2;
             chbTop.Text = "Uygulamayı Üstte Tut";
             chbTop.UseVisualStyleBackColor = true;
@@ -217,5 +381,23 @@
         private Button btnLogOut;
         private Button btnAboutUser;
         public CheckBox chbTop;
+        private ToolStripMenuItem bizeUlaşToolStripMenuItem;
+        private ToolStripMenuItem mailGonderToolStripMenuItem;
+        private ToolStripMenuItem biziArayinToolStripMenuItem;
+        private ToolStripMenuItem whatsAppIleToolStripMenuItem;
+        private ToolStripMenuItem cagriBaslatToolStripMenuItem;
+        private ToolStripMenuItem teknikToolStripMenuItem;
+        private ToolStripMenuItem satisHesapToolStripMenuItem;
+        private ToolStripMenuItem teknikDestekToolStripMenuItem1;
+        private ToolStripMenuItem hataBildirimiToolStripMenuItem;
+        private ToolStripMenuItem abonelikVeOdemeToolStripMenuItem;
+        private ToolStripMenuItem fiyatTeklifiToolStripMenuItem;
+        private ToolStripMenuItem hesapBilgiDegisimiToolStripMenuItem;
+        private ToolStripMenuItem geriBildirimToolStripMenuItem;
+        private ToolStripMenuItem sikayetToolStripMenuItem;
+        private ToolStripMenuItem oneriToolStripMenuItem;
+        private ToolStripMenuItem digerToolStripMenuItem;
+        private ToolStripMenuItem genelIletisimToolStripMenuItem;
+        private ToolStripMenuItem tesekkurToolStripMenuItem;
     }
 }

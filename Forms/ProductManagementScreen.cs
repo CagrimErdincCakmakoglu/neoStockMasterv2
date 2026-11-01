@@ -11,13 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
-using System.Drawing;
-using Microsoft.Win32;
-using System.Configuration;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using OfficeOpenXml.Table;
-using static System.Windows.Forms.DataFormats;
-using System.Globalization;
+using System.Security.Cryptography;
 
 
 namespace neoStockMasterv2.Forms
@@ -35,6 +30,7 @@ namespace neoStockMasterv2.Forms
 
             LanguageService.LanguageChanged += LanguageService_LanguageChanged;
             LanguageService.SetLanguage(LanguageService.CurrentLanguage);
+            this.FormClosed += (s, e) => LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
             PopulateOrderComboBox();
             _productService = new ProductService(); //DI yöntemi
 
@@ -42,7 +38,6 @@ namespace neoStockMasterv2.Forms
 
         private void ProductManagementScreen_Load(object sender, EventArgs e)
         {
-            CheckExcelInstallation();
             SetPersistentToolTip(pbInfo);
         }
 
@@ -189,13 +184,13 @@ namespace neoStockMasterv2.Forms
             bool isEnglish = LanguageService.CurrentLanguage == "English";
 
             // Kolon başlıklarını dil bazlı ayarla
-            productTable.Columns.Add(isEnglish ? "Name" : "İsim");
-            productTable.Columns.Add(isEnglish ? "Cost" : "Maliyet");
-            productTable.Columns.Add(isEnglish ? "Cost Currency" : "Maliyet Para Birimi");
-            productTable.Columns.Add(isEnglish ? "Price" : "Fiyat");
-            productTable.Columns.Add(isEnglish ? "Price Currency" : "Fiyat Para Birimi");
-            productTable.Columns.Add(isEnglish ? "Stock Quantity" : "Stok Adeti");
-            productTable.Columns.Add(isEnglish ? "Added Date" : "Eklenme Tarihi");
+            productTable.Columns.Add(isEnglish ? "Name" : "İsim", typeof(string));
+            productTable.Columns.Add(isEnglish ? "Cost" : "Maliyet", typeof(decimal));
+            productTable.Columns.Add(isEnglish ? "Cost Currency" : "Maliyet Para Birimi", typeof(string));
+            productTable.Columns.Add(isEnglish ? "Price" : "Fiyat", typeof(decimal));
+            productTable.Columns.Add(isEnglish ? "Price Currency" : "Fiyat Para Birimi", typeof(string));
+            productTable.Columns.Add(isEnglish ? "Stock Quantity" : "Stok Adeti", typeof(int));
+            productTable.Columns.Add(isEnglish ? "Added Date" : "Eklenme Tarihi", typeof(DateTime));
 
             // Tarih formatı dil bazlı
             string dateFormat = isEnglish ? "MM-dd-yyyy" : "dd-MM-yyyy";
@@ -209,12 +204,11 @@ namespace neoStockMasterv2.Forms
                     product.Price,
                     product.PriceCurrency,
                     product.Stock,
-                    product.DateAdded.ToString(dateFormat)
+                    product.DateAdded
                 );
             }
 
             productTable.DefaultView.Sort = productTable.Columns[0].ColumnName + " ASC";
-            dgwProducts.DataSource = productTable.DefaultView.ToTable();
 
             dgwProducts.DataSource = productTable;
 
@@ -258,59 +252,29 @@ namespace neoStockMasterv2.Forms
 
         }
 
-        private void CheckExcelInstallation()
+        private async void btnToExcel_Click(object sender, EventArgs e)
         {
-            bool isExcelInstalled = IsExcelInstalled();
-            btnToExcel.Enabled = isExcelInstalled;
-
-            // İsteğe bağlı: Eğer Excel yüklü değilse tooltip ile bilgi verebilirsiniz
-            if (!isExcelInstalled)
-            {
-                string tooltipMessage = LanguageService.CurrentLanguage == "Türkçe" ?
-                    "Excel yüklü olmadığı için bu özellik devre dışı bırakıldı" :
-                    "This feature is disabled because Excel is not installed";
-
-                ttExcel.SetToolTip(btnToExcel, tooltipMessage);
-            }
-        }
-
-        private bool IsExcelInstalled()
-        {
-            try
-            {
-                using (RegistryKey key = Registry.ClassesRoot.OpenSubKey("Excel.Application"))
-                {
-                    return key != null;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private void btnToExcel_Click(object sender, EventArgs e)
-        {
-            // Dil kontrolüne göre onay mesajı
             string message = LanguageService.CurrentLanguage == "Türkçe" ?
                 "Ürünler tablosunu Excel'e aktarmak istediğinize emin misiniz?" :
                 "Are you sure you want to export the products table to Excel?";
 
-            string caption = LanguageService.CurrentLanguage == "Türkçe" ?
-                "Excel'e Aktar" :
-                "Export to Excel";
+            string caption = LanguageService.CurrentLanguage == "Türkçe" ? "Excel'e Aktar" : "Export to Excel";
 
-            // Kullanıcı onayı al
-            var result = MessageBox.Show(message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (MessageBox.Show(message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
 
-            if (result == DialogResult.Yes)
+            btnToExcel.Enabled = false;
+            try
             {
-                ExportToExcel();
+                await ExportToExcel();
             }
-
+            finally
+            {
+                btnToExcel.Enabled = true;
+            }
         }
 
-        private void ExportToExcel()
+        private async Task ExportToExcel()
         {
             try
             {
@@ -424,16 +388,31 @@ namespace neoStockMasterv2.Forms
 
                     if (saveFileDialog.ShowDialog() == DialogResult.OK)
                     {
+                        bool tr = LanguageService.CurrentLanguage == "Türkçe";
                         FileInfo excelFile = new FileInfo(saveFileDialog.FileName);
+                        string excelPassword = GenerateExcelPassword();
 
-                        // 🔐 ŞİFRE KORUMA BURADA
+                        // Önce mail: gitmezse dosya kaydedilmez (yoksa kimsenin açamayacağı bir dosya kalır)
+                        try
+                        {
+                            await new EmailService().SendExcelPasswordEmailAsync(
+                                LoggedInUser.Email, LoggedInUser.Name, excelFile.Name, excelPassword);
+                        }
+                        catch (Exception mailEx)
+                        {
+                            MessageBox.Show(
+                                (tr ? "Şifre e-postası gönderilemediği için dosya kaydedilmedi: " : "The file was not saved because the password e-mail could not be sent: ") + mailEx.Message,
+                                tr ? "Hata" : "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+
                         package.Workbook.Protection.LockStructure = true;
-                        package.Workbook.Protection.SetPassword("1234");
+                        package.Workbook.Protection.SetPassword(excelPassword);
 
                         foreach (var sheet in package.Workbook.Worksheets)
                         {
                             sheet.Protection.IsProtected = true;
-                            sheet.Protection.SetPassword(LoggedInUser.Password);
+                            sheet.Protection.SetPassword(excelPassword);
 
                             sheet.Protection.AllowSelectLockedCells = true;
                             sheet.Protection.AllowSelectUnlockedCells = true;
@@ -453,11 +432,10 @@ namespace neoStockMasterv2.Forms
 
                         package.SaveAs(excelFile);
 
-                        string successMessage = LanguageService.CurrentLanguage == "Türkçe" ?
-                            "Ürünler tablo olarak başarıyla Excel'e aktarıldı!" :
-                            "Products successfully exported as a table to Excel!";
-
-                        MessageBox.Show(successMessage);
+                        MessageBox.Show(tr
+                            ? $"Ürünler Excel'e aktarıldı.\n\nDosyanın kilit şifresi kayıtlı e-posta adresinize gönderildi ({LoggedInUser.Email})."
+                            : $"Products exported to Excel.\n\nThe file's unlock password has been sent to your registered e-mail ({LoggedInUser.Email}).",
+                            tr ? "Başarılı" : "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
             }
@@ -469,15 +447,32 @@ namespace neoStockMasterv2.Forms
             }
         }
 
+        private static string GenerateExcelPassword(int length = 10)
+        {
+            // Karışabilecek karakterler (0/O, 1/l/I) bilerek çıkarıldı
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+            var result = new char[length];
+            for (int i = 0; i < length; i++)
+                result[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+            return new string(result);
+        }
+
         private void dgwProducts_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             dgwProducts.ClearSelection(); //Form açıldığında DGW hücre seçili açılmaz.
+
+            string dateCol = LanguageService.CurrentLanguage == "English" ? "Added Date" : "Eklenme Tarihi";
+            if (dgwProducts.Columns.Contains(dateCol))
+                dgwProducts.Columns[dateCol].DefaultCellStyle.Format =
+                    LanguageService.CurrentLanguage == "English" ? "MM-dd-yyyy" : "dd-MM-yyyy";
         }
 
         private void SetPersistentToolTip(PictureBox pictureBox, int delay = 500)
         {
             string currentLanguage = LanguageService.CurrentLanguage;
-            string text = currentLanguage == "Türkçe" ? "Excel dosyası düzenlemeye kapalı olacaktır.\n\nEğer düzenlemek istiyorsanız şu adımları Excel dosyası üzerinden takip ediniz:\n1- Gözden Geçir\n2- Sayfa Korumasını Kaldır\n3- Şifre, StockMaster programındaki üyeliğinizin şifresidir." : "The Excel file will be locked for editing.\n\nIf you want to enable editing, please follow these steps in the Excel file::\n1- Go to the Review tab\n2- Go to the Review tab\n3- The password is the same as your StockMaster account password.";
+            string text = currentLanguage == "Türkçe"
+    ? "Excel dosyası düzenlemeye kapalı olacaktır.\n\nKilit şifresi her indirmede rastgele oluşturulur ve hesabınıza kayıtlı e-posta adresine gönderilir.\n\nKilidi açmak için Excel'de:\n1- Gözden Geçir\n2- Sayfa Korumasını Kaldır\n3- E-postadaki şifreyi girin."
+    : "The Excel file will be locked for editing.\n\nA random unlock password is generated for each export and sent to your registered e-mail address.\n\nTo unlock it in Excel:\n1- Go to the Review tab\n2- Click Unprotect Sheet\n3- Enter the password from the e-mail.";
 
             ttExcel.InitialDelay = delay;
             ttExcel.ReshowDelay = delay;

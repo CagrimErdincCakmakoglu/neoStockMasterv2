@@ -20,6 +20,7 @@ namespace neoStockMasterv2.Forms
     public partial class PricingOrderScreen : Form
     {
         public static User LoggedInUser { get; set; }
+        private bool _formLoaded = false;
         private int previousCargoIndex = -1;
         private ProductService _productService;
         TextBox editingControl;
@@ -54,11 +55,11 @@ namespace neoStockMasterv2.Forms
 
             ProductService.OnProductsChanged += LoadUserProducts; // Ürün değişince yenile
 
-            // Tutar değiştikçe vergilerin otomaik SEhesaplanması için event bağlantıları
-            cmbDisc.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
-            nmrDisc.ValueChanged += async (s, e) => await ApplyDiscountAndTaxes();
-            cmbSCT.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
-            cmbVAT.SelectedIndexChanged += async (s, e) => await ApplyDiscountAndTaxes();
+            this.FormClosed += (s, e) =>
+            {
+                LanguageService.LanguageChanged -= LanguageService_LanguageChanged;
+                ProductService.OnProductsChanged -= LoadUserProducts;
+            };
 
             this.Height = 555; // Form başlangıç yüksekliği grbCustomerMsg daraltılmış geldiği için
             this.Width = 990;
@@ -102,21 +103,96 @@ namespace neoStockMasterv2.Forms
 
             txtCargo.Enabled = false;
             cmbCargo.Enabled = false;
+            _formLoaded = true;
         }
 
-        private void LanguageService_LanguageChanged()
+        private async void LanguageService_LanguageChanged()
         {
             UpdateFormTexts();
-            FillComboBoxes();
-            UpdatePlaceholders();
-            InitializeProductGrid();
-            InitializeOrderDetailsGrid();
-            LoadUserProducts();
-            InitializeLwDisc();
-            UpdateMessage();
 
-            txtCargo.Enabled = false;
-            cmbCargo.Enabled = false;
+            // Form daha açılmadıysa (constructor sırasında) sadece placeholder'lar; geri kalanını Load yapıyor
+            if (!_formLoaded)
+            {
+                UpdatePlaceholders();
+                return;
+            }
+
+            // ── 1) Kullanıcının girdiklerini sakla ──
+            int pay = cmbPayment.SelectedIndex, status = cmbOrderStatus.SelectedIndex, cargo = cmbCargo.SelectedIndex;
+            int disc = cmbDisc.SelectedIndex, sct = cmbSCT.SelectedIndex, vat = cmbVAT.SelectedIndex;
+            decimal discValue = nmrDisc.Value, cargoValue = nmrCargo.Value;
+
+            string customer = RealText(txtCustomerName, "Müşteri İsmini Yazınız", "Enter Customer Name");
+            string tracker = RealText(txtCargoTracker, "Kargo Takip Numarasını Yazınız", "Enter Cargo Tracking Number");
+            string otherCargo = RealText(txtCargo, "Diğer Kargo Şirketinin Adını Yazınız", "Enter Other Cargo Company Name");
+            string phone = mskPhoneNo.Text;
+
+            // ── 2) Listeleri yeni dilde doldur (seçimleri sıfırlıyor) ──
+            FillComboBoxes();
+
+            // ── 3) Seçimleri geri yükle ──
+            RestoreIndex(cmbPayment, pay);
+            RestoreIndex(cmbOrderStatus, status);
+            RestoreIndex(cmbCargo, cargo);
+            RestoreIndex(cmbDisc, disc);
+            RestoreIndex(cmbSCT, sct);
+            RestoreIndex(cmbVAT, vat);
+            nmrDisc.Value = discValue;
+            nmrCargo.Value = cargoValue;
+
+            // Ödeme/durum seçimine göre hangi alanların açık olacağını yeniden uygula
+            cmbPayment_SelectedIndexChanged(cmbPayment, EventArgs.Empty);
+
+            // ── 4) Placeholder'ları yeni dilde yaz, sonra kullanıcının yazdıklarını geri koy ──
+            UpdatePlaceholders();
+            if (customer != "") txtCustomerName.Text = customer;
+            if (tracker != "") txtCargoTracker.Text = tracker;
+            if (otherCargo != "") txtCargo.Text = otherCargo;
+            mskPhoneNo.Text = phone;
+
+            // ── 5) Tablolar: sütunları silmeden yalnızca başlıkları çevir ──
+            UpdateGridHeaders();
+            InitializeLwDisc();
+
+            // ── 6) Toplamları yeni dilde yeniden hesapla ──
+            await ApplyDiscountAndTaxes();
+            UpdateMessage();
+        }
+
+        // Kutudaki metin placeholder ise "" döner, kullanıcı yazdıysa onu döner
+        private static string RealText(TextBox tb, string trPlaceholder, string enPlaceholder) =>
+            tb.Text == trPlaceholder || tb.Text == enPlaceholder ? "" : tb.Text;
+
+        private static void RestoreIndex(ComboBox cmb, int index)
+        {
+            if (index >= 0 && index < cmb.Items.Count)
+                cmb.SelectedIndex = index;
+        }
+
+        // Sütunları silmeden başlıkları çevirir (satırlar ve girilen adetler korunur)
+        private void UpdateGridHeaders()
+        {
+            bool en = LanguageService.IsEnglish;
+
+            void H(DataGridView grid, string column, string tr, string english)
+            {
+                if (grid.Columns.Contains(column))
+                    grid.Columns[column].HeaderText = en ? english : tr;
+            }
+
+            H(dgwProducts, "Name", "İsim", "Name");
+            H(dgwProducts, "Cost", "Maliyet", "Cost");
+            H(dgwProducts, "CostCurrency", "Maliyet Para Birimi", "Cost Currency");
+            H(dgwProducts, "StockQuantity", "Stok Adeti", "Stock Quantity");
+            H(dgwProducts, "Price", "Fiyat", "Price");
+            H(dgwProducts, "PriceCurrency", "Fiyat Para Birimi", "Price Currency");
+            H(dgwProducts, "OrderQuantity", "Sipariş Adeti", "Order Quantity");
+
+            H(dgwOrderDetails, "Name", "İsmi", "Name");
+            H(dgwOrderDetails, "Price", "Fiyat", "Price");
+            H(dgwOrderDetails, "PriceCurrency", "Fiyat Para Birimi", "Price Currency");
+            H(dgwOrderDetails, "OrderQuantity", "Sipariş Adeti", "Order Quantity");
+            H(dgwOrderDetails, "Total", "Tutar", "Total");
         }
 
         private void UpdateFormTexts()
@@ -566,7 +642,7 @@ namespace neoStockMasterv2.Forms
         "Arjantin Pesosu", "Azerbaycan Manatı", "Bosna-Hersek Markı", "Bulgar Levası", "Bahreyn Dinarı", "Brezilya Reali", "Belarus Rublesi",
         "Şili Pesosu", "Çin Yuanı", "Kolombiya Pesosu", "Kosta Rika Kolonu", "Çek Korunası", "Sepet Kur", "Cezayir Dinarı", "Mısır Lirası",
         "Gürcistan Larisi", "Hong Kong Doları", "Hırvat Kunası", "Macar Forinti", "Endonezya Rupiahi", "İsrail Şekeli", "Hindistan Rupisi",
-        "Irak Dinarı", "İran Riyali", "İzlanda Kronası", "Ürdün Dinarı", "Güney Kore Wonu", "Kazan Tengesi", "Lübnan Lirası", "Sri Lanka Rupisi",
+        "Irak Dinarı", "İran Riyali", "İzlanda Kronası", "Ürdün Dinarı", "Güney Kore Wonu", "Kazak Tengesi", "Lübnan Lirası", "Sri Lanka Rupisi",
         "Litvanya Litası", "Letonya Latsı", "Libya Dinarı", "Fas Dirhemi", "Moldovya Leusu", "Makedon Dinarı", "Meksika Pesosu", "Malezya Ringgiti",
         "Yeni Zelanda Doları", "Umman Riyali", "Peru İnti", "Filipinler Pesosu", "Pakistan Rupisi", "Polonya Zlotisi", "Katar Riyali",
         "Romanya Leyi", "Sırbistan Dinarı", "Suudi Arabistan Riyali", "Singapur Doları", "Suriye Lirası", "Tayland Bahtı", "Tunus Dinarı",
@@ -865,52 +941,6 @@ namespace neoStockMasterv2.Forms
             if (decimal.TryParse(replaced, NumberStyles.Any, CultureInfo.InvariantCulture, out v)) return v;
 
             return 0m;
-        }
-
-        private void OrderQuantity_TextChanged(object sender, EventArgs e)
-        {
-            if (dgwProducts.CurrentCell == null) return;
-            if (dgwProducts.CurrentCell.OwningColumn.Name != "OrderQuantity") return;
-
-            var row = dgwProducts.Rows[dgwProducts.CurrentCell.RowIndex];
-
-            string productName = row.Cells["Name"].Value?.ToString();
-            string priceCurrency = row.Cells["PriceCurrency"].Value?.ToString();
-
-            decimal.TryParse(row.Cells["Price"].Value?.ToString(), out decimal price);
-            int.TryParse(((TextBox)sender).Text, out int orderQty);
-
-            if (orderQty > 0)
-            {
-                decimal total = price * orderQty;
-
-                var existingRow = dgwOrderDetails.Rows
-                    .Cast<DataGridViewRow>()
-                    .FirstOrDefault(r => r.Cells["Name"].Value?.ToString() == productName);
-
-                if (existingRow != null)
-                {
-                    existingRow.Cells["Price"].Value = price;
-                    existingRow.Cells["PriceCurrency"].Value = priceCurrency;
-                    existingRow.Cells["OrderQuantity"].Value = orderQty;
-                    existingRow.Cells["Total"].Value = total;
-                }
-                else
-                {
-                    dgwOrderDetails.Rows.Add(productName, price, priceCurrency, orderQty, total);
-                }
-            }
-            else
-            {
-                var existingRow = dgwOrderDetails.Rows
-                    .Cast<DataGridViewRow>()
-                    .FirstOrDefault(r => r.Cells["Name"].Value?.ToString() == productName);
-
-                if (existingRow != null)
-                {
-                    dgwOrderDetails.Rows.Remove(existingRow);
-                }
-            }
         }
 
         private void NumericTextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -1320,7 +1350,11 @@ namespace neoStockMasterv2.Forms
                     var forexService = new FREEMARKETforex();
                     exchangeRates = await forexService.GetExchangeRatesAsync();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Döviz kurları alınamadı; döviz kalemlerinin vergisi hesaplanamadı.\n{ex.Message}",
+                        "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
 
             decimal totalTaxAmount_TL = 0m;
@@ -1411,39 +1445,39 @@ namespace neoStockMasterv2.Forms
         }
 
 
-        private void cmbDisc_SelectedIndexChanged(object sender, EventArgs e)
+        private async void cmbDisc_SelectedIndexChanged(object sender, EventArgs e)
         {
             ApplyDiscountAndTaxes();
         }
 
-        private void nmrDisc_ValueChanged(object sender, EventArgs e)
+        private async void nmrDisc_ValueChanged(object sender, EventArgs e)
         {
             ApplyDiscountAndTaxes();
         }
 
-        private void nmrDisc_KeyUp(object sender, KeyEventArgs e)
+        private async void nmrDisc_KeyUp(object sender, KeyEventArgs e)
         {
             ApplyDiscountAndTaxes();
         }
 
-        private void cmbSCT_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ApplyDiscountAndTaxes();
-
-        }
-
-        private void cmbVAT_SelectedIndexChanged(object sender, EventArgs e)
+        private async void cmbSCT_SelectedIndexChanged(object sender, EventArgs e)
         {
             ApplyDiscountAndTaxes();
 
         }
 
-        private void nmrCargo_ValueChanged(object sender, EventArgs e)
+        private async void cmbVAT_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ApplyDiscountAndTaxes();
+
+        }
+
+        private async void nmrCargo_ValueChanged(object sender, EventArgs e)
         {
             ApplyDiscountAndTaxes();
         }
 
-        private void nmrCargo_KeyUp(object sender, KeyEventArgs e)
+        private async void nmrCargo_KeyUp(object sender, KeyEventArgs e)
         {
             ApplyDiscountAndTaxes();
         }
@@ -1749,54 +1783,45 @@ namespace neoStockMasterv2.Forms
 
         private void btnWhatsapp_Click(object sender, EventArgs e)
         {
-            string question, caption;
+            bool tr = !LanguageService.IsEnglish;
 
-            if (türkçeToolStripMenuItem.Checked)
+            // (532) 123-4567 → 5321234567
+            string digits = new string(mskPhoneNo.Text.Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("0")) digits = digits.Substring(1);
+
+            if (digits.Length != 10)
             {
-                question = "WhatsApp uygulamasını açmak istediğinize emin misiniz?";
-                caption = "Onay";
+                MessageBox.Show(tr ? "Önce müşterinin telefon numarasını eksiksiz giriniz." : "Please enter the customer's full phone number first.",
+                    tr ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                mskPhoneNo.Focus();
+                return;
             }
-            else
+
+            string message = rchMessage.Text.Trim();
+            if (message == "")
             {
-                question = "Are you sure you want to open WhatsApp application?";
-                caption = "Confirmation";
+                MessageBox.Show(tr ? "Gönderilecek bir bilgilendirme mesajı yok." : "There is no message to send.",
+                    tr ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
-            DialogResult result = MessageBox.Show(
-                question,
-                caption,
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
+            if (MessageBox.Show(
+                    tr ? $"Bilgilendirme mesajı WhatsApp'ta +90 {digits} numarasına hazırlansın mı?"
+                       : $"Prepare the message on WhatsApp for +90 {digits}?",
+                    tr ? "Onay" : "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
 
-            if (result == DialogResult.Yes)
+            string url = $"https://wa.me/90{digits}?text={Uri.EscapeDataString(message)}";
+
+            try
             {
-                try
-                {
-                    if (btnWhatsapp.Tag.ToString() == "local")
-                    {
-                        // Local exe ile aç
-                        string localPath = Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                            @"WhatsApp\WhatsApp.exe"
-                        );
-                        Process.Start(localPath);
-                    }
-                    else
-                    {
-                        // Microsoft Store üzerinden aç
-                        Process.Start("explorer.exe", "whatsapp://send");
-                    }
-                }
-                catch (Exception)
-                {
-                    MessageBox.Show(
-                        türkçeToolStripMenuItem.Checked ? "WhatsApp açılamadı." : "Failed to open WhatsApp.",
-                        "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                }
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception)
+            {
+                Clipboard.SetText(message);
+                MessageBox.Show(tr ? "WhatsApp açılamadı. Mesaj panoya kopyalandı." : "WhatsApp could not be opened. The message was copied to the clipboard.",
+                    tr ? "Bilgi" : "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -1926,8 +1951,6 @@ namespace neoStockMasterv2.Forms
                 lw.MouseEnter += lw_MouseEnter;
                 lw.MouseLeave += lw_MouseLeave;
             }
-
-            hoverTimer.Tick += hoverTimer_Tick;
         }
 
         // Ortak event handlerlar
@@ -2218,7 +2241,7 @@ namespace neoStockMasterv2.Forms
 
         // BÜTÜN TABLOLARI YENİ BİR FORMDA GÖSTERMEK İÇİN BİTİŞ
 
-        private void btnAddOrder_Click(object sender, EventArgs e)
+        private async void btnAddOrder_Click(object sender, EventArgs e)
         {
             bool isTurkish = LanguageService.CurrentLanguage == "Türkçe";
 
@@ -2295,6 +2318,28 @@ namespace neoStockMasterv2.Forms
                 ? "Bu siparişi eklemek istediğinize emin misiniz?"
                 : "Are you sure you want to add this order?";
 
+            // Stok kontrolü: sipariş kaydedilmeden ÖNCE
+            var stockItems = dgwOrderDetails.Rows.Cast<DataGridViewRow>()
+                .Where(r => !r.IsNewRow)
+                .Select(r => (ProductName: r.Cells["Name"].Value?.ToString() ?? "",
+                              Quantity: Convert.ToInt32(r.Cells["OrderQuantity"].Value ?? 0)))
+                .Where(i => i.Quantity > 0)
+                .ToList();
+
+            if (stockItems.Count == 0)
+            {
+                MessageBox.Show(isTurkish ? "Siparişe en az bir ürün ekleyin." : "Add at least one product to the order.",
+                    isTurkish ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string? stockError = _productService.CheckStock(stockItems);
+            if (stockError != null)
+            {
+                MessageBox.Show(stockError, isTurkish ? "Yetersiz Stok" : "Insufficient Stock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             var result = MessageBox.Show(confirmMessage,
                 isTurkish ? "Onay" : "Confirmation",
                 MessageBoxButtons.YesNo,
@@ -2370,11 +2415,15 @@ namespace neoStockMasterv2.Forms
             };
 
             // TotalPrice (lwTotal)
-            foreach (ListViewItem item in lwTotal.Items)
+            // TotalPrice: indirim öncesi brüt tutar (dgwOrderDetails "Total" sütunu, para birimine göre)
+            foreach (DataGridViewRow row in dgwOrderDetails.Rows)
             {
-                string currency = item.SubItems[0].Text;
-                if (TryParseDecimalFlexible(item.SubItems[1].Text, out decimal value))
-                    order.TotalPrice[currency] = value;
+                if (row.IsNewRow) continue;
+                string currency = row.Cells["PriceCurrency"].Value?.ToString() ?? "";
+                if (string.IsNullOrEmpty(currency)) continue;
+                if (!TryParseDecimalFlexible(row.Cells["Total"].Value?.ToString() ?? "", out decimal gross)) continue;
+
+                order.TotalPrice[currency] = order.TotalPrice.TryGetValue(currency, out decimal current) ? current + gross : gross;
             }
 
             // TotalDiscount (lwDiscList)
@@ -2447,48 +2496,38 @@ namespace neoStockMasterv2.Forms
             }
 
             // Kaydetme işlemi
-            var service = new OrderService();
-            service.AddOrder(order);
+            // === Kaydet ve stok düş ===
+            new OrderService().AddOrder(order);
+            _productService.DecreaseStockForOrder(stockItems);
 
             MessageBox.Show(
                 isTurkish ? "Sipariş başarıyla eklendi." : "Order has been added successfully.",
                 isTurkish ? "Bilgi" : "Info",
                 MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
+                MessageBoxIcon.Information);
 
-            // === E-Posta gönderimi (Excel ekli) ===
+            // === E-posta (Excel ekli): form temizlenmeden ÖNCE gönderilmeli ===
             if (!string.IsNullOrWhiteSpace(LoggedInUser?.Email))
             {
-                var emailService = new EmailService("stockmasterapp@gmail.com", "shhu hvks hkfe aoec");
-
-                emailService.SendOrderWithExcelAttachment(
-                    LoggedInUser.Email,
-                    LoggedInUser.Name,
-                    order.PayableAmount.Values.Sum(),
-                    dgwOrderDetails,
-                    lwDisc,
-                    lwTotal,
-                    lwDiscList,
-                    lwTax,
-                    cmbDisc,
-                    nmrDisc,
-                    cmbSCT,
-                    cmbVAT,
-                    nmrCargo,
-                    txtCustomerName,
-                    mskPhoneNo,
-                    DateTime.Now,
-                    LoggedInUser.Language,
-                    LoggedInUser.Password
-                );
-            }
-
-            // === Stok Düşürme: Sipariş edilen ürünlerin stoklarını güncelle ===
-            foreach (var detail in order.OrderContent)
-            {
-                if (detail.Quantity <= 0) continue;
-                _productService.UpdateStockAfterOrder(detail.ProductName, detail.Quantity);
+                btnAddOrder.Enabled = false;
+                try
+                {
+                    await new EmailService().SendOrderWithExcelAttachmentAsync(
+                        LoggedInUser.Email, LoggedInUser.Name,
+                        dgwOrderDetails, lwDisc, lwTotal, lwDiscList, lwTax,
+                        cmbDisc, nmrDisc, cmbSCT, cmbVAT, nmrCargo,
+                        txtCustomerName, mskPhoneNo, DateTime.Now, LoggedInUser.Language);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        (isTurkish ? "Sipariş kaydedildi ancak e-posta gönderilemedi: " : "Order saved but the e-mail could not be sent: ") + ex.Message,
+                        isTurkish ? "Uyarı" : "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                finally
+                {
+                    btnAddOrder.Enabled = true;
+                }
             }
 
             // dgwProducts tablosundaki Sipariş Adeti sütunu sıfırlansın
